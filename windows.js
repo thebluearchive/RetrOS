@@ -19,6 +19,7 @@ export class WindowManager {
     this.windowLayer.addEventListener("mousedown", this.handleWindowLayerMouseDown.bind(this));
     this.windowLayer.addEventListener("click", this.handleWindowLayerClick.bind(this));
     this.windowLayer.addEventListener("dblclick", this.handleWindowLayerDoubleClick.bind(this));
+    this.windowLayer.addEventListener("submit", this.handleWindowLayerSubmit.bind(this), true);
     this.taskbarApps.addEventListener("click", this.handleTaskbarClick.bind(this));
   }
 
@@ -50,6 +51,7 @@ export class WindowManager {
       appId: app.id,
       title: app.title,
       icon: app.icon,
+      data: typeof app.createState === "function" ? app.createState() : {},
       x: app.defaultPosition.x,
       y: app.defaultPosition.y,
       width: app.defaultSize.width,
@@ -84,6 +86,10 @@ export class WindowManager {
   focusWindow(windowId) {
     const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
     if (!target) {
+      return;
+    }
+
+    if (target.isActive && !target.isMinimized) {
       return;
     }
 
@@ -246,49 +252,28 @@ export class WindowManager {
   }
 
   renderWindows() {
-    const windowsMarkup = this.state.windows
+    const visibleWindows = this.state.windows
       .filter((windowItem) => !windowItem.isMinimized)
-      .sort((left, right) => left.zIndex - right.zIndex)
-      .map((windowItem) => {
-        const app = this.apps[windowItem.appId];
-        const activeClass = windowItem.isActive ? "window--active" : "window--inactive";
-        const titleBarClass = windowItem.isActive ? "window__titlebar--active" : "window__titlebar--inactive";
-        const maximizeAction = windowItem.isMaximized ? "restore" : "maximize";
-        const maximizeLabel = windowItem.isMaximized ? "Restore" : "Maximize";
-        const maximizeSymbol = windowItem.isMaximized ? "❐" : "□";
+      .sort((left, right) => left.zIndex - right.zIndex);
 
-        return `
-          <section
-            class="window ${activeClass}"
-            data-window-id="${windowItem.id}"
-            style="left:${windowItem.x}px;top:${windowItem.y}px;width:${windowItem.width}px;height:${windowItem.height}px;z-index:${windowItem.zIndex}"
-          >
-            <header class="window__titlebar ${titleBarClass}" data-drag-handle="true">
-              <div class="window__title">
-                <img class="window__icon" src="${windowItem.icon}" alt="" width="16" height="16">
-                <span>${windowItem.title}</span>
-              </div>
-              <div class="window__controls">
-                <button class="window__control win95-button" type="button" data-action="minimize" data-window-id="${windowItem.id}" aria-label="Minimize">_</button>
-                <button class="window__control win95-button" type="button" data-action="${maximizeAction}" data-window-id="${windowItem.id}" aria-label="${maximizeLabel}">${maximizeSymbol}</button>
-                <button class="window__control win95-button" type="button" data-action="close" data-window-id="${windowItem.id}" aria-label="Close">X</button>
-              </div>
-            </header>
-            <div class="window__body">
-              ${app.render()}
-            </div>
-            ${windowItem.isMaximized ? "" : `
-              <button class="window__resize-handle window__resize-handle--top-left" type="button" data-resize-edge="top-left" data-window-id="${windowItem.id}" aria-label="Resize from top left"></button>
-              <button class="window__resize-handle window__resize-handle--top-right" type="button" data-resize-edge="top-right" data-window-id="${windowItem.id}" aria-label="Resize from top right"></button>
-              <button class="window__resize-handle window__resize-handle--bottom-left" type="button" data-resize-edge="bottom-left" data-window-id="${windowItem.id}" aria-label="Resize from bottom left"></button>
-              <button class="window__resize-handle window__resize-handle--bottom-right" type="button" data-resize-edge="bottom-right" data-window-id="${windowItem.id}" aria-label="Resize from bottom right"></button>
-            `}
-          </section>
-        `;
-      })
-      .join("");
+    const visibleIds = new Set(visibleWindows.map((windowItem) => windowItem.id));
 
-    this.windowLayer.innerHTML = windowsMarkup;
+    Array.from(this.windowLayer.children).forEach((child) => {
+      if (!visibleIds.has(child.dataset.windowId)) {
+        child.remove();
+      }
+    });
+
+    visibleWindows.forEach((windowItem) => {
+      let element = this.windowLayer.querySelector(`[data-window-id="${windowItem.id}"]`);
+
+      if (!element) {
+        element = this.createWindowElement(windowItem);
+        this.windowLayer.appendChild(element);
+      }
+
+      this.updateWindowElement(element, windowItem);
+    });
   }
 
   renderTaskbar() {
@@ -315,6 +300,13 @@ export class WindowManager {
   }
 
   handleWindowLayerClick(event) {
+    const browserActionButton = event.target.closest("[data-browser-action]");
+    if (browserActionButton) {
+      const { browserAction, windowId } = browserActionButton.dataset;
+      this.handleBrowserAction(windowId, browserAction);
+      return;
+    }
+
     const button = event.target.closest("[data-action]");
     if (button) {
       const { action, windowId } = button.dataset;
@@ -352,6 +344,25 @@ export class WindowManager {
     }
 
     this.toggleMaximizeWindow(windowElement.dataset.windowId);
+  }
+
+  handleWindowLayerSubmit(event) {
+    const form = event.target.closest("[data-browser-form]");
+    if (!form) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const windowId = form.dataset.browserForm;
+    const formData = new FormData(form);
+    const url = this.normalizeUrl(formData.get("url"));
+
+    if (!url) {
+      return;
+    }
+
+    this.navigateBrowserWindow(windowId, url);
   }
 
   handleTaskbarClick(event) {
@@ -529,5 +540,186 @@ export class WindowManager {
       width: this.windowLayer.clientWidth,
       height: this.windowLayer.clientHeight,
     };
+  }
+
+  createWindowElement(windowItem) {
+    const app = this.apps[windowItem.appId];
+    const element = document.createElement("section");
+    element.dataset.windowId = windowItem.id;
+    element.innerHTML = `
+      <header class="window__titlebar" data-drag-handle="true">
+        <div class="window__title">
+          <img class="window__icon" alt="" width="16" height="16">
+          <span></span>
+        </div>
+        <div class="window__controls">
+          <button class="window__control win95-button" type="button" data-action="minimize" data-window-id="${windowItem.id}" aria-label="Minimize">_</button>
+          <button class="window__control win95-button" type="button" data-action="maximize" data-window-id="${windowItem.id}" aria-label="Maximize">□</button>
+          <button class="window__control win95-button" type="button" data-action="close" data-window-id="${windowItem.id}" aria-label="Close">X</button>
+        </div>
+      </header>
+      <div class="window__body"></div>
+    `;
+
+    const body = element.querySelector(".window__body");
+    body.innerHTML = app.render(windowItem);
+    this.syncResizeHandles(element, windowItem);
+
+    return element;
+  }
+
+  updateWindowElement(element, windowItem) {
+    const activeClass = windowItem.isActive ? "window--active" : "window--inactive";
+    const titleBarClass = windowItem.isActive ? "window__titlebar--active" : "window__titlebar--inactive";
+    const titleBar = element.querySelector(".window__titlebar");
+    const icon = element.querySelector(".window__icon");
+    const titleText = element.querySelector(".window__title span");
+    const maximizeButton = element.querySelector('[data-action="maximize"], [data-action="restore"]');
+
+    element.className = `window ${activeClass}`;
+    element.style.left = `${windowItem.x}px`;
+    element.style.top = `${windowItem.y}px`;
+    element.style.width = `${windowItem.width}px`;
+    element.style.height = `${windowItem.height}px`;
+    element.style.zIndex = String(windowItem.zIndex);
+
+    titleBar.className = `window__titlebar ${titleBarClass}`;
+    icon.src = windowItem.icon;
+    titleText.textContent = windowItem.title;
+
+    if (maximizeButton) {
+      maximizeButton.dataset.action = windowItem.isMaximized ? "restore" : "maximize";
+      maximizeButton.setAttribute("aria-label", windowItem.isMaximized ? "Restore" : "Maximize");
+      maximizeButton.textContent = windowItem.isMaximized ? "❐" : "□";
+    }
+
+    this.syncResizeHandles(element, windowItem);
+
+    if (windowItem.appId === "browser") {
+      this.syncBrowserWindow(element, windowItem);
+    }
+  }
+
+  syncResizeHandles(element, windowItem) {
+    element.querySelectorAll(".window__resize-handle").forEach((handle) => handle.remove());
+
+    if (windowItem.isMaximized) {
+      return;
+    }
+
+    const edges = ["top-left", "top-right", "bottom-left", "bottom-right"];
+
+    edges.forEach((edge) => {
+      const handle = document.createElement("button");
+      handle.className = `window__resize-handle window__resize-handle--${edge}`;
+      handle.type = "button";
+      handle.dataset.resizeEdge = edge;
+      handle.dataset.windowId = windowItem.id;
+      handle.setAttribute("aria-label", `Resize from ${edge.replace("-", " ")}`);
+      element.appendChild(handle);
+    });
+  }
+
+  syncBrowserWindow(element, windowItem) {
+    const browserRoot = element.querySelector(`[data-browser-window="${windowItem.id}"]`);
+    if (!browserRoot) {
+      return;
+    }
+
+    const input = browserRoot.querySelector(".browser-app__input");
+    const frame = browserRoot.querySelector(".browser-app__frame");
+    const backButton = browserRoot.querySelector('[data-browser-action="back"]');
+    const forwardButton = browserRoot.querySelector('[data-browser-action="forward"]');
+    const url = windowItem.data.url;
+
+    if (input && document.activeElement !== input && input.value !== url) {
+      input.value = url;
+    }
+
+    if (frame && frame.getAttribute("src") !== url) {
+      frame.setAttribute("src", url);
+    }
+
+    if (backButton) {
+      backButton.disabled = windowItem.data.backStack.length === 0;
+    }
+
+    if (forwardButton) {
+      forwardButton.disabled = windowItem.data.forwardStack.length === 0;
+    }
+  }
+
+  navigateBrowserWindow(windowId, url) {
+    const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
+    if (!target || target.appId !== "browser") {
+      return;
+    }
+
+    if (target.data.url === url) {
+      return;
+    }
+
+    target.data.backStack.push(target.data.url);
+    target.data.forwardStack = [];
+    target.data.url = url;
+
+    const element = this.windowLayer.querySelector(`[data-window-id="${windowId}"]`);
+    if (element) {
+      this.syncBrowserWindow(element, target);
+    }
+  }
+
+  normalizeUrl(rawValue) {
+    const value = String(rawValue ?? "").trim();
+
+    if (!value) {
+      return "";
+    }
+
+    if (/^https?:\/\//i.test(value)) {
+      return value;
+    }
+
+    return `https://${value}`;
+  }
+
+  handleBrowserAction(windowId, action) {
+    const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
+    if (!target || target.appId !== "browser") {
+      return;
+    }
+
+    if (action === "back") {
+      if (target.data.backStack.length === 0) {
+        return;
+      }
+
+      target.data.forwardStack.push(target.data.url);
+      target.data.url = target.data.backStack.pop();
+      this.syncBrowserState(windowId, target);
+      return;
+    }
+
+    if (action === "forward") {
+      if (target.data.forwardStack.length === 0) {
+        return;
+      }
+
+      target.data.backStack.push(target.data.url);
+      target.data.url = target.data.forwardStack.pop();
+      this.syncBrowserState(windowId, target);
+      return;
+    }
+
+    if (action === "home") {
+      this.navigateBrowserWindow(windowId, target.data.homeUrl);
+    }
+  }
+
+  syncBrowserState(windowId, target) {
+    const element = this.windowLayer.querySelector(`[data-window-id="${windowId}"]`);
+    if (element) {
+      this.syncBrowserWindow(element, target);
+    }
   }
 }

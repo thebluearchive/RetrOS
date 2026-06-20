@@ -275,6 +275,96 @@ body {
   padding-left: 18px;
 }
 
+.browser-app {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+}
+
+.browser-app__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  background: linear-gradient(180deg, #efefef 0%, #d6d6d6 100%);
+  border-bottom: 1px solid var(--surface-dark);
+}
+
+.browser-app__nav {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.browser-app__nav--top {
+  align-self: flex-start;
+}
+
+.browser-app__address-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.browser-app__nav-button {
+  min-width: 60px;
+  height: 24px;
+  padding: 0 8px;
+  font-weight: 400;
+}
+
+.browser-app__label {
+  font-weight: 700;
+}
+
+.browser-app__brand-icon {
+  width: 20px;
+  height: 20px;
+  image-rendering: pixelated;
+}
+
+.browser-app__input {
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  padding: 2px 6px;
+  border: 2px solid;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+}
+
+.browser-app__button {
+  min-width: 54px;
+  height: 24px;
+  padding: 0 10px;
+  font-weight: 400;
+}
+
+.browser-app__viewport {
+  flex: 1;
+  min-height: 0;
+  border: 2px solid;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: #ffffff;
+  box-shadow: inset 1px 1px 0 #7f7f7f;
+}
+
+.browser-app__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #ffffff;
+}
+
 .taskbar {
   position: fixed;
   right: 0;
