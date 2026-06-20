@@ -285,19 +285,26 @@ body {
 .browser-app__toolbar {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 4px;
-  background: linear-gradient(180deg, #efefef 0%, #d6d6d6 100%);
-  border-bottom: 1px solid var(--surface-dark);
+  gap: 3px;
+  padding: 4px 4px 3px;
+  background: linear-gradient(180deg, #efefef 0%, #d8d8d8 55%, #cfcfcf 100%);
+  border-bottom: 1px solid #8b8b8b;
 }
 
 .browser-app__nav {
   display: inline-flex;
-  gap: 4px;
+  align-items: stretch;
+  gap: 0;
 }
 
 .browser-app__nav--top {
   align-self: flex-start;
+}
+
+.browser-app__toolbar-divider {
+  width: 2px;
+  margin: 2px 6px 1px;
+  background: linear-gradient(90deg, #7f7f7f 0 50%, #ffffff 50% 100%);
 }
 
 .browser-app__address-row {
@@ -308,14 +315,80 @@ body {
 }
 
 .browser-app__nav-button {
-  min-width: 60px;
+  min-width: 28px;
   height: 24px;
   padding: 0 8px;
   font-weight: 400;
+  justify-content: center;
+}
+
+.browser-app__nav-button--toolbar.win95-button {
+  min-width: 56px;
+  width: 56px;
+  height: 42px;
+  padding: 2px 4px 1px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  position: relative;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.browser-app__nav-label {
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.browser-app__nav-icon {
+  width: 20px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
 }
 
 .browser-app__label {
   font-weight: 700;
+}
+
+.browser-app__arrow {
+  display: inline-block;
+  width: 0;
+  height: 0;
+}
+
+.browser-app__arrow--back {
+  border-top: 5px solid transparent;
+  border-right: 7px solid #000000;
+  border-bottom: 5px solid transparent;
+}
+
+.browser-app__arrow--forward {
+  border-top: 5px solid transparent;
+  border-left: 7px solid #000000;
+  border-bottom: 5px solid transparent;
+}
+
+.browser-app__nav-caret {
+  position: absolute;
+  right: 3px;
+  bottom: 4px;
+  width: 0;
+  height: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  border-top: 4px solid #555555;
+}
+
+.browser-app__toolbar-icon {
+  width: 16px;
+  height: 16px;
+  image-rendering: pixelated;
+  flex: 0 0 auto;
 }
 
 .browser-app__brand-icon {

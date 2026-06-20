@@ -144,7 +144,12 @@ export class WindowManager {
     target.width = bounds.width;
     target.height = bounds.height;
     target.isMaximized = true;
-    this.focusWindow(windowId);
+    this.state.windows.forEach((windowItem) => {
+      windowItem.isActive = false;
+    });
+    target.isActive = true;
+    target.zIndex = this.consumeZIndex();
+    this.render();
   }
 
   restoreWindow(windowId) {
@@ -159,7 +164,12 @@ export class WindowManager {
     target.height = target.restoreBounds.height;
     target.restoreBounds = null;
     target.isMaximized = false;
-    this.focusWindow(windowId);
+    this.state.windows.forEach((windowItem) => {
+      windowItem.isActive = false;
+    });
+    target.isActive = true;
+    target.zIndex = this.consumeZIndex();
+    this.render();
   }
 
   toggleTaskbarWindow(windowId) {
@@ -713,6 +723,11 @@ export class WindowManager {
 
     if (action === "home") {
       this.navigateBrowserWindow(windowId, target.data.homeUrl);
+      return;
+    }
+
+    if (action === "refresh") {
+      this.refreshBrowserWindow(windowId, target);
     }
   }
 
@@ -721,5 +736,19 @@ export class WindowManager {
     if (element) {
       this.syncBrowserWindow(element, target);
     }
+  }
+
+  refreshBrowserWindow(windowId, target) {
+    const element = this.windowLayer.querySelector(`[data-window-id="${windowId}"]`);
+    if (!element) {
+      return;
+    }
+
+    const frame = element.querySelector(".browser-app__frame");
+    if (!frame) {
+      return;
+    }
+
+    frame.setAttribute("src", target.data.url);
   }
 }

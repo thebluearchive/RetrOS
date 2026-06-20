@@ -32,9 +32,31 @@ export const apps = {
         <div class="browser-app browser-app--ie" data-browser-window="${windowItem.id}">
           <form class="browser-app__toolbar" data-browser-form="${windowItem.id}">
             <div class="browser-app__nav browser-app__nav--top">
-              <button class="browser-app__nav-button win95-button" type="button" data-browser-action="back" data-window-id="${windowItem.id}" ${canGoBack ? "" : "disabled"}>Back</button>
-              <button class="browser-app__nav-button win95-button" type="button" data-browser-action="forward" data-window-id="${windowItem.id}" ${canGoForward ? "" : "disabled"}>Forward</button>
-              <button class="browser-app__nav-button win95-button" type="button" data-browser-action="home" data-window-id="${windowItem.id}">Home</button>
+              <button class="browser-app__nav-button browser-app__nav-button--toolbar win95-button" type="button" data-browser-action="back" data-window-id="${windowItem.id}" aria-label="Back" ${canGoBack ? "" : "disabled"}>
+                <span class="browser-app__nav-icon browser-app__nav-icon--back" aria-hidden="true">
+                  <span class="browser-app__arrow browser-app__arrow--back"></span>
+                </span>
+                <span class="browser-app__nav-label">Back</span>
+                <span class="browser-app__nav-caret" aria-hidden="true"></span>
+              </button>
+              <span class="browser-app__toolbar-divider" aria-hidden="true"></span>
+              <button class="browser-app__nav-button browser-app__nav-button--toolbar win95-button" type="button" data-browser-action="forward" data-window-id="${windowItem.id}" aria-label="Forward" ${canGoForward ? "" : "disabled"}>
+                <span class="browser-app__nav-icon browser-app__nav-icon--forward" aria-hidden="true">
+                  <span class="browser-app__arrow browser-app__arrow--forward"></span>
+                </span>
+                <span class="browser-app__nav-label">Forward</span>
+                <span class="browser-app__nav-caret" aria-hidden="true"></span>
+              </button>
+              <span class="browser-app__toolbar-divider" aria-hidden="true"></span>
+              <button class="browser-app__nav-button browser-app__nav-button--toolbar win95-button" type="button" data-browser-action="refresh" data-window-id="${windowItem.id}" aria-label="Refresh">
+                <img class="browser-app__toolbar-icon" src="./res/png/windows_update_old-0.png" alt="" width="20" height="20">
+                <span class="browser-app__nav-label">Refresh</span>
+              </button>
+              <span class="browser-app__toolbar-divider" aria-hidden="true"></span>
+              <button class="browser-app__nav-button browser-app__nav-button--toolbar win95-button" type="button" data-browser-action="home" data-window-id="${windowItem.id}" aria-label="Home">
+                <img class="browser-app__toolbar-icon" src="./res/png/homepage-0.png" alt="" width="20" height="20">
+                <span class="browser-app__nav-label">Home</span>
+              </button>
             </div>
             <div class="browser-app__address-row">
               <label class="browser-app__label" for="browser-url-${windowItem.id}">Address</label>
