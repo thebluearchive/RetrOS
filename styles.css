@@ -1,0 +1,158 @@
+:root {
+  --desktop-bg: #008080;
+  --desktop-dot: rgba(255, 255, 255, 0.14);
+  --surface: #c0c0c0;
+  --surface-light: #ffffff;
+  --surface-mid: #dfdfdf;
+  --surface-dark: #808080;
+  --surface-shadow: #000000;
+  --active-blue: #000080;
+  --text: #111111;
+  --taskbar-height: 42px;
+  --font-main: "MS Sans Serif", Tahoma, Geneva, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  overflow: hidden;
+  background: var(--desktop-bg);
+  color: var(--text);
+  font-family: var(--font-main);
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.desktop {
+  position: relative;
+  min-height: 100vh;
+  padding-bottom: var(--taskbar-height);
+  background: linear-gradient(180deg, #008080 0%, #007171 100%);
+}
+
+.desktop__pattern {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--desktop-dot) 1px, transparent 1px);
+  background-size: 12px 12px;
+  pointer-events: none;
+}
+
+.taskbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--taskbar-height);
+  padding: 4px 6px;
+  background: var(--surface);
+  border-top: 2px solid var(--surface-light);
+  box-shadow: inset 0 1px 0 var(--surface-mid);
+}
+
+.win95-button,
+.win95-panel {
+  border-style: solid;
+  border-width: 2px;
+}
+
+.win95-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 92px;
+  height: 30px;
+  padding: 0 10px;
+  background: var(--surface);
+  border-top-color: var(--surface-light);
+  border-left-color: var(--surface-light);
+  border-right-color: var(--surface-shadow);
+  border-bottom-color: var(--surface-shadow);
+  box-shadow: inset -1px -1px 0 var(--surface-dark), inset 1px 1px 0 var(--surface-mid);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.win95-button:active {
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  box-shadow: inset 1px 1px 0 var(--surface-dark), inset -1px -1px 0 var(--surface-mid);
+}
+
+.win95-button:focus-visible {
+  outline: 1px dotted var(--surface-shadow);
+  outline-offset: -6px;
+}
+
+.start-button__logo {
+  width: 16px;
+  height: 16px;
+  background:
+    linear-gradient(90deg, #f25022 0 50%, #7fba00 50% 100%),
+    linear-gradient(90deg, #00a4ef 0 50%, #ffb900 50% 100%);
+  background-size: 100% 50%;
+  background-repeat: no-repeat;
+  background-position: top, bottom;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+}
+
+.taskbar__apps {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border-top: 2px solid var(--surface-dark);
+  border-left: 2px solid var(--surface-dark);
+  border-right: 2px solid var(--surface-light);
+  border-bottom: 2px solid var(--surface-light);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.03)),
+    var(--surface);
+}
+
+.taskbar__clock {
+  min-width: 92px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  background: var(--surface);
+  border-top-color: var(--surface-dark);
+  border-left-color: var(--surface-dark);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  box-shadow: inset 1px 1px 0 #909090;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .taskbar {
+    gap: 6px;
+    padding: 4px;
+  }
+
+  .start-button {
+    min-width: 84px;
+    padding: 0 8px;
+  }
+
+  .taskbar__clock {
+    min-width: 78px;
+    padding: 0 8px;
+  }
+}
