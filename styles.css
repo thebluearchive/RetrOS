@@ -14,7 +14,6 @@
 
 :root {
   --desktop-bg: #008080;
-  --desktop-dot: rgba(255, 255, 255, 0.14);
   --surface: #c0c0c0;
   --surface-light: #ffffff;
   --surface-mid: #dfdfdf;
@@ -65,15 +64,7 @@ iframe {
   position: relative;
   min-height: 100vh;
   padding-bottom: var(--taskbar-height);
-  background: linear-gradient(180deg, #008080 0%, #007171 100%);
-}
-
-.desktop__pattern {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, var(--desktop-dot) 1px, transparent 1px);
-  background-size: 12px 12px;
-  pointer-events: none;
+  background: var(--desktop-bg);
 }
 
 .desktop-icons {
@@ -84,6 +75,18 @@ iframe {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.desktop-selection {
+  position: absolute;
+  z-index: 1;
+  border: 1px dotted #ffffff;
+  background: rgba(0, 0, 128, 0.18);
+  pointer-events: none;
+}
+
+.desktop-selection--hidden {
+  display: none;
 }
 
 .desktop-icon {
@@ -115,6 +118,10 @@ iframe {
   padding: 1px 3px;
   line-height: 1.1;
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.75);
+}
+
+.desktop-icon--selected .desktop-icon__label {
+  background: var(--active-blue);
 }
 
 .window-layer {

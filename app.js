@@ -12,6 +12,12 @@ const desktopContextMenuElement = document.getElementById("desktop-context-menu"
 const shutdownScreenElement = document.getElementById("shutdown-screen");
 const shutdownSequenceDuration = 2000;
 let shutdownTimeoutIds = [];
+const desktopSelectionElement = document.createElement("div");
+let desktopSelectionState = null;
+
+desktopSelectionElement.className = "desktop-selection desktop-selection--hidden";
+desktopSelectionElement.setAttribute("aria-hidden", "true");
+desktopElement.insertBefore(desktopSelectionElement, windowLayerElement);
 
 const windowManager = new WindowManager({
   apps,
@@ -62,6 +68,56 @@ function setDesktopContextMenuState(isOpen, x = 0, y = 0) {
 
 function closeDesktopContextMenu() {
   setDesktopContextMenuState(false);
+}
+
+function setDesktopSelectionState(isVisible, rect = null) {
+  desktopSelectionElement.classList.toggle("desktop-selection--hidden", !isVisible);
+
+  if (!isVisible || !rect) {
+    return;
+  }
+
+  desktopSelectionElement.style.left = `${rect.left}px`;
+  desktopSelectionElement.style.top = `${rect.top}px`;
+  desktopSelectionElement.style.width = `${rect.width}px`;
+  desktopSelectionElement.style.height = `${rect.height}px`;
+}
+
+function clearDesktopIconSelection() {
+  desktopIconsElement.querySelectorAll(".desktop-icon--selected").forEach((icon) => {
+    icon.classList.remove("desktop-icon--selected");
+    icon.setAttribute("aria-selected", "false");
+  });
+}
+
+function selectDesktopIconsInRect(rect) {
+  const desktopRect = desktopElement.getBoundingClientRect();
+  let selectedCount = 0;
+
+  desktopIconsElement.querySelectorAll(".desktop-icon").forEach((icon) => {
+    const iconRect = icon.getBoundingClientRect();
+    const relativeRect = {
+      left: iconRect.left - desktopRect.left,
+      top: iconRect.top - desktopRect.top,
+      right: iconRect.right - desktopRect.left,
+      bottom: iconRect.bottom - desktopRect.top,
+    };
+
+    const intersects =
+      rect.left < relativeRect.right &&
+      rect.right > relativeRect.left &&
+      rect.top < relativeRect.bottom &&
+      rect.bottom > relativeRect.top;
+
+    icon.classList.toggle("desktop-icon--selected", intersects);
+    icon.setAttribute("aria-selected", String(intersects));
+
+    if (intersects) {
+      selectedCount += 1;
+    }
+  });
+
+  return selectedCount;
 }
 
 function setShutdownScreenState(isOpen) {
@@ -132,6 +188,36 @@ startMenu.addEventListener("click", (event) => {
   closeStartMenu();
 });
 
+desktopElement.addEventListener("mousedown", (event) => {
+  if (event.button !== 0) {
+    return;
+  }
+
+  if (event.target.closest(".window") || event.target.closest(".desktop-icon")) {
+    return;
+  }
+
+  const desktopRect = desktopElement.getBoundingClientRect();
+  const startX = event.clientX - desktopRect.left;
+  const startY = event.clientY - desktopRect.top;
+
+  desktopSelectionState = {
+    startX,
+    startY,
+  };
+
+  closeStartMenu();
+  closeDesktopContextMenu();
+  setDesktopSelectionState(true, {
+    left: startX,
+    top: startY,
+    width: 0,
+    height: 0,
+  });
+
+  event.preventDefault();
+});
+
 desktopIconsElement.addEventListener("dblclick", (event) => {
   const icon = event.target.closest("[data-app-id]");
   if (!icon) {
@@ -144,6 +230,17 @@ desktopIconsElement.addEventListener("dblclick", (event) => {
   }
 });
 
+desktopIconsElement.addEventListener("click", (event) => {
+  const icon = event.target.closest(".desktop-icon");
+  if (!icon) {
+    return;
+  }
+
+  clearDesktopIconSelection();
+  icon.classList.add("desktop-icon--selected");
+  icon.setAttribute("aria-selected", "true");
+});
+
 desktopElement.addEventListener("contextmenu", (event) => {
   if (event.target.closest(".window") || event.target.closest(".desktop-icon")) {
     return;
@@ -152,6 +249,52 @@ desktopElement.addEventListener("contextmenu", (event) => {
   event.preventDefault();
   closeStartMenu();
   setDesktopContextMenuState(true, event.clientX, event.clientY);
+});
+
+document.addEventListener("mousemove", (event) => {
+  if (!desktopSelectionState) {
+    return;
+  }
+
+  const desktopRect = desktopElement.getBoundingClientRect();
+  const currentX = Math.max(0, Math.min(event.clientX - desktopRect.left, desktopRect.width));
+  const currentY = Math.max(0, Math.min(event.clientY - desktopRect.top, desktopRect.height));
+  const left = Math.min(desktopSelectionState.startX, currentX);
+  const top = Math.min(desktopSelectionState.startY, currentY);
+  const width = Math.abs(currentX - desktopSelectionState.startX);
+  const height = Math.abs(currentY - desktopSelectionState.startY);
+
+  setDesktopSelectionState(true, {
+    left,
+    top,
+    width,
+    height,
+  });
+});
+
+document.addEventListener("mouseup", () => {
+  if (!desktopSelectionState) {
+    return;
+  }
+
+  const selectionRect = {
+    left: parseFloat(desktopSelectionElement.style.left) || desktopSelectionState.startX,
+    top: parseFloat(desktopSelectionElement.style.top) || desktopSelectionState.startY,
+    width: parseFloat(desktopSelectionElement.style.width) || 0,
+    height: parseFloat(desktopSelectionElement.style.height) || 0,
+  };
+  const selectedCount = selectDesktopIconsInRect({
+    ...selectionRect,
+    right: selectionRect.left + selectionRect.width,
+    bottom: selectionRect.top + selectionRect.height,
+  });
+
+  if (selectedCount === 0) {
+    clearDesktopIconSelection();
+  }
+
+  desktopSelectionState = null;
+  setDesktopSelectionState(false);
 });
 
 desktopContextMenuElement.addEventListener("click", (event) => {
