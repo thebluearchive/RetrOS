@@ -1,3 +1,17 @@
+@font-face {
+  font-family: "Pixelated MS Sans Serif";
+  src: url("./res/fonts/ms_sans_serif.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Pixelated MS Sans Serif";
+  src: url("./res/fonts/ms_sans_serif_bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+}
+
 :root {
   --desktop-bg: #008080;
   --desktop-dot: rgba(255, 255, 255, 0.14);
@@ -9,7 +23,7 @@
   --active-blue: #000080;
   --text: #111111;
   --taskbar-height: 42px;
-  --font-main: "MS Sans Serif", Tahoma, Geneva, sans-serif;
+  --font-main: "Pixelated MS Sans Serif", "MS Sans Serif", Tahoma, Geneva, sans-serif;
 }
 
 * {
@@ -27,8 +41,10 @@ body {
   background: var(--desktop-bg);
   color: var(--text);
   font-family: var(--font-main);
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.2;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 .desktop {
