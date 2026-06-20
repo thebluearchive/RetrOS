@@ -18,6 +18,7 @@ export class WindowManager {
 
     this.windowLayer.addEventListener("mousedown", this.handleWindowLayerMouseDown.bind(this));
     this.windowLayer.addEventListener("click", this.handleWindowLayerClick.bind(this));
+    this.windowLayer.addEventListener("dblclick", this.handleWindowLayerDoubleClick.bind(this));
     this.taskbarApps.addEventListener("click", this.handleTaskbarClick.bind(this));
   }
 
@@ -56,6 +57,8 @@ export class WindowManager {
       minWidth: app.minSize?.width ?? 240,
       minHeight: app.minSize?.height ?? 160,
       isMinimized: false,
+      isMaximized: false,
+      restoreBounds: null,
       isActive: true,
       zIndex: this.consumeZIndex(),
     };
@@ -109,6 +112,48 @@ export class WindowManager {
     }
 
     this.render();
+  }
+
+  toggleMaximizeWindow(windowId) {
+    const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
+    if (!target) {
+      return;
+    }
+
+    if (target.isMaximized) {
+      this.restoreWindow(windowId);
+      return;
+    }
+
+    target.restoreBounds = {
+      x: target.x,
+      y: target.y,
+      width: target.width,
+      height: target.height,
+    };
+
+    const bounds = this.getMaximizedBounds();
+    target.x = bounds.x;
+    target.y = bounds.y;
+    target.width = bounds.width;
+    target.height = bounds.height;
+    target.isMaximized = true;
+    this.focusWindow(windowId);
+  }
+
+  restoreWindow(windowId) {
+    const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
+    if (!target || !target.restoreBounds) {
+      return;
+    }
+
+    target.x = target.restoreBounds.x;
+    target.y = target.restoreBounds.y;
+    target.width = target.restoreBounds.width;
+    target.height = target.restoreBounds.height;
+    target.restoreBounds = null;
+    target.isMaximized = false;
+    this.focusWindow(windowId);
   }
 
   toggleTaskbarWindow(windowId) {
@@ -208,6 +253,9 @@ export class WindowManager {
         const app = this.apps[windowItem.appId];
         const activeClass = windowItem.isActive ? "window--active" : "window--inactive";
         const titleBarClass = windowItem.isActive ? "window__titlebar--active" : "window__titlebar--inactive";
+        const maximizeAction = windowItem.isMaximized ? "restore" : "maximize";
+        const maximizeLabel = windowItem.isMaximized ? "Restore" : "Maximize";
+        const maximizeSymbol = windowItem.isMaximized ? "❐" : "□";
 
         return `
           <section
@@ -222,16 +270,19 @@ export class WindowManager {
               </div>
               <div class="window__controls">
                 <button class="window__control win95-button" type="button" data-action="minimize" data-window-id="${windowItem.id}" aria-label="Minimize">_</button>
+                <button class="window__control win95-button" type="button" data-action="${maximizeAction}" data-window-id="${windowItem.id}" aria-label="${maximizeLabel}">${maximizeSymbol}</button>
                 <button class="window__control win95-button" type="button" data-action="close" data-window-id="${windowItem.id}" aria-label="Close">X</button>
               </div>
             </header>
             <div class="window__body">
               ${app.render()}
             </div>
-            <button class="window__resize-handle window__resize-handle--top-left" type="button" data-resize-edge="top-left" data-window-id="${windowItem.id}" aria-label="Resize from top left"></button>
-            <button class="window__resize-handle window__resize-handle--top-right" type="button" data-resize-edge="top-right" data-window-id="${windowItem.id}" aria-label="Resize from top right"></button>
-            <button class="window__resize-handle window__resize-handle--bottom-left" type="button" data-resize-edge="bottom-left" data-window-id="${windowItem.id}" aria-label="Resize from bottom left"></button>
-            <button class="window__resize-handle window__resize-handle--bottom-right" type="button" data-resize-edge="bottom-right" data-window-id="${windowItem.id}" aria-label="Resize from bottom right"></button>
+            ${windowItem.isMaximized ? "" : `
+              <button class="window__resize-handle window__resize-handle--top-left" type="button" data-resize-edge="top-left" data-window-id="${windowItem.id}" aria-label="Resize from top left"></button>
+              <button class="window__resize-handle window__resize-handle--top-right" type="button" data-resize-edge="top-right" data-window-id="${windowItem.id}" aria-label="Resize from top right"></button>
+              <button class="window__resize-handle window__resize-handle--bottom-left" type="button" data-resize-edge="bottom-left" data-window-id="${windowItem.id}" aria-label="Resize from bottom left"></button>
+              <button class="window__resize-handle window__resize-handle--bottom-right" type="button" data-resize-edge="bottom-right" data-window-id="${windowItem.id}" aria-label="Resize from bottom right"></button>
+            `}
           </section>
         `;
       })
@@ -273,6 +324,12 @@ export class WindowManager {
       if (action === "minimize") {
         this.minimizeWindow(windowId);
       }
+      if (action === "maximize") {
+        this.toggleMaximizeWindow(windowId);
+      }
+      if (action === "restore") {
+        this.restoreWindow(windowId);
+      }
       return;
     }
 
@@ -280,6 +337,21 @@ export class WindowManager {
     if (windowElement) {
       this.focusWindow(windowElement.dataset.windowId);
     }
+  }
+
+  handleWindowLayerDoubleClick(event) {
+    if (event.target.closest("[data-action]")) {
+      return;
+    }
+
+    const titleBar = event.target.closest("[data-drag-handle]");
+    const windowElement = event.target.closest("[data-window-id]");
+
+    if (!titleBar || !windowElement) {
+      return;
+    }
+
+    this.toggleMaximizeWindow(windowElement.dataset.windowId);
   }
 
   handleTaskbarClick(event) {
@@ -312,6 +384,11 @@ export class WindowManager {
     const target = this.state.windows.find((windowItem) => windowItem.id === windowElement.dataset.windowId);
 
     if (!target) {
+      return;
+    }
+
+    if (target.isMaximized) {
+      this.focusWindow(target.id);
       return;
     }
 
@@ -360,6 +437,10 @@ export class WindowManager {
     const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
 
     if (!target || !edge) {
+      return;
+    }
+
+    if (target.isMaximized) {
       return;
     }
 
@@ -439,5 +520,14 @@ export class WindowManager {
   consumeZIndex() {
     this.state.nextZIndex += 1;
     return this.state.nextZIndex;
+  }
+
+  getMaximizedBounds() {
+    return {
+      x: 0,
+      y: 0,
+      width: this.windowLayer.clientWidth,
+      height: this.windowLayer.clientHeight,
+    };
   }
 }
