@@ -19,6 +19,7 @@ export class WindowManager {
     this.windowLayer.addEventListener("mousedown", this.handleWindowLayerMouseDown.bind(this));
     this.windowLayer.addEventListener("click", this.handleWindowLayerClick.bind(this));
     this.windowLayer.addEventListener("dblclick", this.handleWindowLayerDoubleClick.bind(this));
+    this.windowLayer.addEventListener("input", this.handleWindowLayerInput.bind(this));
     this.windowLayer.addEventListener("submit", this.handleWindowLayerSubmit.bind(this), true);
     this.taskbarApps.addEventListener("click", this.handleTaskbarClick.bind(this));
   }
@@ -375,6 +376,22 @@ export class WindowManager {
     this.navigateBrowserWindow(windowId, url);
   }
 
+  handleWindowLayerInput(event) {
+    const editor = event.target.closest("[data-notepad-editor]");
+    if (!editor) {
+      return;
+    }
+
+    const windowId = editor.dataset.notepadEditor;
+    const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
+
+    if (!target || target.appId !== "notepad") {
+      return;
+    }
+
+    target.data.content = editor.value;
+  }
+
   handleTaskbarClick(event) {
     const button = event.target.closest("[data-window-id]");
     if (!button) {
@@ -608,6 +625,10 @@ export class WindowManager {
     if (windowItem.appId === "browser") {
       this.syncBrowserWindow(element, windowItem);
     }
+
+    if (windowItem.appId === "notepad") {
+      this.syncNotepadWindow(element, windowItem);
+    }
   }
 
   syncResizeHandles(element, windowItem) {
@@ -656,6 +677,17 @@ export class WindowManager {
 
     if (forwardButton) {
       forwardButton.disabled = windowItem.data.forwardStack.length === 0;
+    }
+  }
+
+  syncNotepadWindow(element, windowItem) {
+    const editor = element.querySelector(`[data-notepad-editor="${windowItem.id}"]`);
+    if (!editor) {
+      return;
+    }
+
+    if (document.activeElement !== editor && editor.value !== windowItem.data.content) {
+      editor.value = windowItem.data.content;
     }
   }
 

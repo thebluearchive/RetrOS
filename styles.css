@@ -524,6 +524,58 @@ body {
   background: #ffffff;
 }
 
+.notepad-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.notepad-app__menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 2px 4px;
+}
+
+.notepad-app__menu-item {
+  min-width: 0;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #000000;
+  font: inherit;
+  cursor: pointer;
+}
+
+.notepad-app__menu-item:hover,
+.notepad-app__menu-item:focus-visible {
+  border-color: var(--surface-dark);
+  outline: none;
+}
+
+.notepad-app__editor {
+  width: 100%;
+  flex: 1;
+  display: block;
+  resize: none;
+  padding: 6px;
+  border: 2px solid;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: #ffffff;
+  color: #000000;
+  font-family: "Pixelated MS Sans Serif", "MS Sans Serif", monospace;
+  font-size: 14px;
+  line-height: 1.25;
+  white-space: pre-wrap;
+}
+
+.notepad-app__editor:focus {
+  outline: none;
+}
+
 .taskbar {
   position: fixed;
   right: 0;
