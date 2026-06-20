@@ -7,6 +7,7 @@ const windowLayerElement = document.getElementById("window-layer");
 const taskbarAppsElement = document.getElementById("taskbar-apps");
 const startButton = document.getElementById("start-button");
 const startMenu = document.getElementById("start-menu");
+const desktopIconsElement = document.querySelector(".desktop-icons");
 
 const windowManager = new WindowManager({
   apps,
@@ -57,6 +58,18 @@ startMenu.addEventListener("click", (event) => {
   }
 
   closeStartMenu();
+});
+
+desktopIconsElement.addEventListener("dblclick", (event) => {
+  const icon = event.target.closest("[data-app-id]");
+  if (!icon) {
+    return;
+  }
+
+  const { appId } = icon.dataset;
+  if (windowManager.hasApp(appId)) {
+    windowManager.openWindow(appId);
+  }
 });
 
 document.addEventListener("click", (event) => {

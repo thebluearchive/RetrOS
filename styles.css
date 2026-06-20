@@ -62,11 +62,54 @@ body {
   pointer-events: none;
 }
 
+.desktop-icons {
+  position: absolute;
+  top: 12px;
+  left: 10px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.desktop-icon {
+  width: 84px;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 2px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #ffffff;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.desktop-icon__image {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  image-rendering: pixelated;
+}
+
+.desktop-icon__label {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px 3px;
+  line-height: 1.1;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.75);
+}
+
 .window-layer {
   position: relative;
   width: 100%;
   height: calc(100vh - var(--taskbar-height));
   overflow: hidden;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .start-menu {
@@ -164,6 +207,7 @@ body {
   border-bottom: 2px solid var(--surface-shadow);
   box-shadow: inset -1px -1px 0 var(--surface-dark), inset 1px 1px 0 var(--surface-mid);
   overflow: visible;
+  pointer-events: auto;
 }
 
 .window__titlebar {
