@@ -14,6 +14,7 @@ export class WindowManager {
       nextZIndex: 10,
     };
     this.dragState = null;
+    this.resizeState = null;
 
     this.windowLayer.addEventListener("mousedown", this.handleWindowLayerMouseDown.bind(this));
     this.windowLayer.addEventListener("click", this.handleWindowLayerClick.bind(this));
@@ -52,6 +53,8 @@ export class WindowManager {
       y: app.defaultPosition.y,
       width: app.defaultSize.width,
       height: app.defaultSize.height,
+      minWidth: app.minSize?.width ?? 240,
+      minHeight: app.minSize?.height ?? 160,
       isMinimized: false,
       isActive: true,
       zIndex: this.consumeZIndex(),
@@ -142,6 +145,56 @@ export class WindowManager {
     this.render();
   }
 
+  resizeWindow(windowId, nextRect) {
+    const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
+    if (!target) {
+      return;
+    }
+
+    const desktopWidth = this.desktop.clientWidth;
+    const desktopHeight = this.desktop.clientHeight - 2;
+    const minWidth = target.minWidth;
+    const minHeight = target.minHeight;
+
+    let x = nextRect.x;
+    let y = nextRect.y;
+    let width = nextRect.width;
+    let height = nextRect.height;
+
+    if (width < minWidth) {
+      width = minWidth;
+      if (nextRect.edge.includes("left")) {
+        x = target.x + target.width - minWidth;
+      }
+    }
+
+    if (height < minHeight) {
+      height = minHeight;
+      if (nextRect.edge.includes("top")) {
+        y = target.y + target.height - minHeight;
+      }
+    }
+
+    if (x < 0) {
+      width += x;
+      x = 0;
+    }
+
+    if (y < 0) {
+      height += y;
+      y = 0;
+    }
+
+    width = Math.max(minWidth, Math.min(width, desktopWidth - x));
+    height = Math.max(minHeight, Math.min(height, desktopHeight - y));
+
+    target.x = x;
+    target.y = y;
+    target.width = width;
+    target.height = height;
+    this.render();
+  }
+
   render() {
     this.renderWindows();
     this.renderTaskbar();
@@ -175,6 +228,10 @@ export class WindowManager {
             <div class="window__body">
               ${app.render()}
             </div>
+            <button class="window__resize-handle window__resize-handle--top-left" type="button" data-resize-edge="top-left" data-window-id="${windowItem.id}" aria-label="Resize from top left"></button>
+            <button class="window__resize-handle window__resize-handle--top-right" type="button" data-resize-edge="top-right" data-window-id="${windowItem.id}" aria-label="Resize from top right"></button>
+            <button class="window__resize-handle window__resize-handle--bottom-left" type="button" data-resize-edge="bottom-left" data-window-id="${windowItem.id}" aria-label="Resize from bottom left"></button>
+            <button class="window__resize-handle window__resize-handle--bottom-right" type="button" data-resize-edge="bottom-right" data-window-id="${windowItem.id}" aria-label="Resize from bottom right"></button>
           </section>
         `;
       })
@@ -235,6 +292,12 @@ export class WindowManager {
   }
 
   handleWindowLayerMouseDown(event) {
+    const resizeHandle = event.target.closest("[data-resize-edge]");
+    if (resizeHandle) {
+      this.startResize(event, resizeHandle);
+      return;
+    }
+
     if (event.target.closest("[data-action]")) {
       return;
     }
@@ -268,6 +331,11 @@ export class WindowManager {
   }
 
   handleMouseMove(event) {
+    if (this.resizeState) {
+      this.handleResizeMove(event);
+      return;
+    }
+
     if (!this.dragState) {
       return;
     }
@@ -279,10 +347,87 @@ export class WindowManager {
 
   handleMouseUp() {
     this.dragState = null;
+    this.resizeState = null;
     document.removeEventListener("mousemove", this.boundHandleMouseMove);
     document.removeEventListener("mouseup", this.boundHandleMouseUp);
     this.boundHandleMouseMove = null;
     this.boundHandleMouseUp = null;
+  }
+
+  startResize(event, resizeHandle) {
+    const windowId = resizeHandle.dataset.windowId;
+    const edge = resizeHandle.dataset.resizeEdge;
+    const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
+
+    if (!target || !edge) {
+      return;
+    }
+
+    this.focusWindow(target.id);
+
+    this.resizeState = {
+      windowId: target.id,
+      edge,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: target.x,
+      originY: target.y,
+      originWidth: target.width,
+      originHeight: target.height,
+    };
+
+    this.boundHandleMouseMove = this.handleMouseMove.bind(this);
+    this.boundHandleMouseUp = this.handleMouseUp.bind(this);
+
+    document.addEventListener("mousemove", this.boundHandleMouseMove);
+    document.addEventListener("mouseup", this.boundHandleMouseUp);
+  }
+
+  handleResizeMove(event) {
+    if (!this.resizeState) {
+      return;
+    }
+
+    const {
+      windowId,
+      edge,
+      startX,
+      startY,
+      originX,
+      originY,
+      originWidth,
+      originHeight,
+    } = this.resizeState;
+
+    const deltaX = event.clientX - startX;
+    const deltaY = event.clientY - startY;
+    const nextRect = {
+      x: originX,
+      y: originY,
+      width: originWidth,
+      height: originHeight,
+      edge,
+    };
+
+    if (edge.includes("right")) {
+      nextRect.width = originWidth + deltaX;
+    }
+
+    if (edge.includes("left")) {
+      nextRect.x = originX + deltaX;
+      nextRect.width = originWidth - deltaX;
+    }
+
+    if (edge.includes("bottom")) {
+      nextRect.height = originHeight + deltaY;
+    }
+
+    if (edge.includes("top")) {
+      nextRect.y = originY + deltaY;
+      nextRect.height = originHeight - deltaY;
+    }
+
+    this.resizeWindow(windowId, nextRect);
   }
 
   getTopVisibleWindow(excludedWindowId) {

@@ -163,6 +163,7 @@ body {
   border-right: 2px solid var(--surface-shadow);
   border-bottom: 2px solid var(--surface-shadow);
   box-shadow: inset -1px -1px 0 var(--surface-dark), inset 1px 1px 0 var(--surface-mid);
+  overflow: visible;
 }
 
 .window__titlebar {
@@ -226,6 +227,40 @@ body {
   border-right: 2px solid var(--surface-light);
   border-bottom: 2px solid var(--surface-light);
   overflow: auto;
+}
+
+.window__resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  appearance: none;
+}
+
+.window__resize-handle--top-left {
+  top: -1px;
+  left: -1px;
+  cursor: nwse-resize;
+}
+
+.window__resize-handle--top-right {
+  top: -1px;
+  right: -1px;
+  cursor: nesw-resize;
+}
+
+.window__resize-handle--bottom-left {
+  bottom: -1px;
+  left: -1px;
+  cursor: nesw-resize;
+}
+
+.window__resize-handle--bottom-right {
+  right: -1px;
+  bottom: -1px;
+  cursor: nwse-resize;
 }
 
 .window-content__title {

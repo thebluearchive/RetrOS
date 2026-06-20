@@ -7,6 +7,10 @@ export const apps = {
       width: 420,
       height: 300,
     },
+    minSize: {
+      width: 300,
+      height: 220,
+    },
     defaultPosition: {
       x: 72,
       y: 56,
@@ -32,6 +36,10 @@ export const apps = {
     defaultSize: {
       width: 360,
       height: 220,
+    },
+    minSize: {
+      width: 280,
+      height: 180,
     },
     defaultPosition: {
       x: 132,
