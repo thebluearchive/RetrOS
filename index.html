@@ -11,9 +11,52 @@
     <div class="desktop__pattern" aria-hidden="true"></div>
   </main>
 
+  <section
+    id="start-menu"
+    class="start-menu start-menu--hidden"
+    aria-label="Start menu"
+    aria-hidden="true"
+  >
+    <div class="start-menu__sidebar" aria-hidden="true">
+      <span class="start-menu__brand-windows">Windows</span>
+      <span class="start-menu__brand-version">95</span>
+    </div>
+
+    <div class="start-menu__content">
+      <button class="start-menu__item" type="button">
+        <img class="start-menu__icon" src="./res/png/program_manager-0.png" alt="" width="22" height="22">
+        <span>Programs</span>
+      </button>
+      <button class="start-menu__item" type="button">
+        <img class="start-menu__icon" src="./res/png/directory_open_file_mydocs_small-0.png" alt="" width="22" height="22">
+        <span>Documents</span>
+      </button>
+      <button class="start-menu__item" type="button">
+        <img class="start-menu__icon" src="./res/png/briefcase-0.png" alt="" width="22" height="22">
+        <span>Portfolio</span>
+      </button>
+      <button class="start-menu__item" type="button">
+        <img class="start-menu__icon" src="./res/png/message_envelope_open-0.png" alt="" width="22" height="22">
+        <span>Contact</span>
+      </button>
+      <div class="start-menu__divider" aria-hidden="true"></div>
+      <button class="start-menu__item" type="button">
+        <img class="start-menu__icon" src="./res/png/shut_down_normal-0.png" alt="" width="22" height="22">
+        <span>Shut Down...</span>
+      </button>
+    </div>
+  </section>
+
   <footer class="taskbar" aria-label="Taskbar">
-    <button class="start-button win95-button" type="button" aria-label="Start menu">
-      <span class="start-button__logo" aria-hidden="true"></span>
+    <button
+      id="start-button"
+      class="start-button win95-button"
+      type="button"
+      aria-label="Start menu"
+      aria-controls="start-menu"
+      aria-expanded="false"
+    >
+      <img class="start-button__logo" src="./res/png/windows-0.png" alt="" width="18" height="18">
       <span>Start</span>
     </button>
 

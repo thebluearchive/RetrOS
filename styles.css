@@ -46,6 +46,90 @@ body {
   pointer-events: none;
 }
 
+.start-menu {
+  position: fixed;
+  bottom: calc(var(--taskbar-height) - 2px);
+  left: 4px;
+  display: flex;
+  width: min(300px, calc(100vw - 8px));
+  min-height: 340px;
+  background: var(--surface);
+  border-top: 2px solid var(--surface-light);
+  border-left: 2px solid var(--surface-light);
+  border-right: 2px solid var(--surface-shadow);
+  border-bottom: 2px solid var(--surface-shadow);
+  box-shadow: inset -1px -1px 0 var(--surface-dark), inset 1px 1px 0 var(--surface-mid);
+  transform-origin: bottom left;
+}
+
+.start-menu--hidden {
+  display: none;
+}
+
+.start-menu__sidebar {
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 34px;
+  padding: 14px 6px;
+  background: linear-gradient(180deg, #7f7f7f 0%, #5d5d5d 100%);
+  color: var(--surface-light);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.start-menu__brand-windows {
+  font-size: 22px;
+  line-height: 0.9;
+}
+
+.start-menu__brand-version {
+  color: #d9d9d9;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.start-menu__content {
+  flex: 1;
+  padding: 6px 4px;
+}
+
+.start-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.start-menu__item:hover,
+.start-menu__item:focus-visible {
+  background: var(--active-blue);
+  color: var(--surface-light);
+  outline: none;
+}
+
+.start-menu__divider {
+  height: 2px;
+  margin: 4px 2px;
+  background: linear-gradient(180deg, var(--surface-dark) 0 50%, var(--surface-light) 50% 100%);
+}
+
+.start-menu__icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  image-rendering: pixelated;
+}
+
 .taskbar {
   position: fixed;
   right: 0;
@@ -94,21 +178,24 @@ body {
   box-shadow: inset 1px 1px 0 var(--surface-dark), inset -1px -1px 0 var(--surface-mid);
 }
 
+.win95-button[aria-expanded="true"] {
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  box-shadow: inset 1px 1px 0 var(--surface-dark), inset -1px -1px 0 var(--surface-mid);
+}
+
 .win95-button:focus-visible {
   outline: 1px dotted var(--surface-shadow);
   outline-offset: -6px;
 }
 
 .start-button__logo {
-  width: 16px;
-  height: 16px;
-  background:
-    linear-gradient(90deg, #f25022 0 50%, #7fba00 50% 100%),
-    linear-gradient(90deg, #00a4ef 0 50%, #ffb900 50% 100%);
-  background-size: 100% 50%;
-  background-repeat: no-repeat;
-  background-position: top, bottom;
-  border: 1px solid rgba(0, 0, 0, 0.35);
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  image-rendering: pixelated;
 }
 
 .taskbar__apps {
@@ -141,6 +228,12 @@ body {
 }
 
 @media (max-width: 640px) {
+  .start-menu {
+    left: 2px;
+    bottom: calc(var(--taskbar-height) - 2px);
+    width: calc(100vw - 4px);
+  }
+
   .taskbar {
     gap: 6px;
     padding: 4px;
