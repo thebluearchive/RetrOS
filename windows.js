@@ -636,6 +636,15 @@ export class WindowManager {
     return this.windowLayer.querySelector(`[data-window-id="${windowId}"]`);
   }
 
+  getWindowIds(options = {}) {
+    const excludeWindowIds = new Set(options.excludeWindowIds ?? []);
+
+    return this.state.windows
+      .filter((windowItem) => !excludeWindowIds.has(windowItem.id))
+      .sort((left, right) => right.zIndex - left.zIndex)
+      .map((windowItem) => windowItem.id);
+  }
+
   syncAppWindow(windowId) {
     const windowItem = this.state.windows.find((item) => item.id === windowId);
     if (!windowItem) {

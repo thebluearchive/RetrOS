@@ -361,6 +361,70 @@ body {
   padding-left: 18px;
 }
 
+.shutdown-app {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  height: 100%;
+}
+
+.shutdown-app__body {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 2px 4px 0 2px;
+}
+
+.shutdown-app__icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  margin-top: 8px;
+  image-rendering: pixelated;
+}
+
+.shutdown-app__content {
+  flex: 1;
+}
+
+.shutdown-app__prompt {
+  margin: 2px 0 10px;
+}
+
+.shutdown-app__options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shutdown-app__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  color: #000000;
+  cursor: pointer;
+}
+
+.shutdown-app__radio {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #000000;
+}
+
+.shutdown-app__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 8px 2px;
+}
+
+.shutdown-app__button {
+  min-width: 122px;
+}
+
 .browser-app {
   display: flex;
   flex-direction: column;
@@ -700,6 +764,28 @@ body {
   border-bottom-color: var(--surface-light);
   box-shadow: inset 1px 1px 0 #909090;
   font-size: 14px;
+}
+
+.shutdown-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #000000;
+}
+
+.shutdown-screen--hidden {
+  display: none;
+}
+
+body.is-shut-down .desktop,
+body.is-shut-down .taskbar,
+body.is-shut-down .start-menu,
+body.is-shut-down .context-menu,
+body.is-shutting-down .desktop,
+body.is-shutting-down .taskbar,
+body.is-shutting-down .start-menu,
+body.is-shutting-down .context-menu {
+  pointer-events: none;
 }
 
 @media (max-width: 640px) {

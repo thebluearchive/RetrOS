@@ -5,6 +5,7 @@ import { myComputerApp } from "./components/my-computer.js";
 import { notepadApp } from "./components/notepad.js";
 import { portfolioApp } from "./components/portfolio.js";
 import { recycleBinApp } from "./components/recycle-bin.js";
+import { shutdownApp } from "./components/shutdown.js";
 
 export const apps = {
   [notepadApp.id]: notepadApp,
@@ -14,4 +15,5 @@ export const apps = {
   [portfolioApp.id]: portfolioApp,
   [contactApp.id]: contactApp,
   [recycleBinApp.id]: recycleBinApp,
+  [shutdownApp.id]: shutdownApp,
 };

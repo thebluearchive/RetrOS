@@ -9,6 +9,9 @@ const startButton = document.getElementById("start-button");
 const startMenu = document.getElementById("start-menu");
 const desktopIconsElement = document.querySelector(".desktop-icons");
 const desktopContextMenuElement = document.getElementById("desktop-context-menu");
+const shutdownScreenElement = document.getElementById("shutdown-screen");
+const shutdownSequenceDuration = 2000;
+let shutdownTimeoutIds = [];
 
 const windowManager = new WindowManager({
   apps,
@@ -59,6 +62,53 @@ function setDesktopContextMenuState(isOpen, x = 0, y = 0) {
 
 function closeDesktopContextMenu() {
   setDesktopContextMenuState(false);
+}
+
+function setShutdownScreenState(isOpen) {
+  shutdownScreenElement.classList.toggle("shutdown-screen--hidden", !isOpen);
+  shutdownScreenElement.setAttribute("aria-hidden", String(!isOpen));
+  document.body.classList.toggle("is-shut-down", isOpen);
+
+  if (isOpen) {
+    closeStartMenu();
+    closeDesktopContextMenu();
+  }
+}
+
+function setShuttingDownState(isPending) {
+  document.body.classList.toggle("is-shutting-down", isPending);
+}
+
+function clearShutdownTimers() {
+  shutdownTimeoutIds.forEach((timeoutId) => {
+    window.clearTimeout(timeoutId);
+  });
+  shutdownTimeoutIds = [];
+}
+
+function startShutdownSequence() {
+  const openWindowIds = windowManager.getWindowIds();
+  const closeDelays = openWindowIds.map((_, index) => {
+    return Math.round(((index + 1) * shutdownSequenceDuration) / (openWindowIds.length + 1));
+  });
+
+  setShuttingDownState(true);
+
+  closeDelays.forEach((delay, index) => {
+    const timeoutId = window.setTimeout(() => {
+      windowManager.closeWindow(openWindowIds[index]);
+    }, delay);
+
+    shutdownTimeoutIds.push(timeoutId);
+  });
+
+  const finalTimeoutId = window.setTimeout(() => {
+    setShuttingDownState(false);
+    setShutdownScreenState(true);
+    shutdownTimeoutIds = [];
+  }, shutdownSequenceDuration);
+
+  shutdownTimeoutIds.push(finalTimeoutId);
 }
 
 startButton.addEventListener("click", (event) => {
@@ -127,7 +177,50 @@ desktopContextMenuElement.addEventListener("click", (event) => {
   closeDesktopContextMenu();
 });
 
+document.addEventListener("win95:window-action", (event) => {
+  const { action, windowId } = event.detail ?? {};
+
+  if (action === "close" && windowId) {
+    windowManager.closeWindow(windowId);
+  }
+});
+
+document.addEventListener("win95:shutdown", (event) => {
+  const { action, windowId } = event.detail ?? {};
+
+  if (windowId) {
+    windowManager.closeWindow(windowId);
+  }
+
+  if (action === "restart") {
+    window.location.reload();
+    return;
+  }
+
+  clearShutdownTimers();
+  startShutdownSequence();
+});
+
+function restoreFromShutdownScreen() {
+  clearShutdownTimers();
+  setShuttingDownState(false);
+  setShutdownScreenState(false);
+}
+
 document.addEventListener("click", (event) => {
+  if (document.body.classList.contains("is-shut-down")) {
+    if (shutdownScreenElement.contains(event.target) || event.target === shutdownScreenElement) {
+      restoreFromShutdownScreen();
+    }
+    return;
+  }
+
+  if (
+    document.body.classList.contains("is-shutting-down")
+  ) {
+    return;
+  }
+
   if (!startMenu.contains(event.target) && event.target !== startButton) {
     closeStartMenu();
   }
@@ -138,6 +231,17 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (document.body.classList.contains("is-shut-down")) {
+    event.preventDefault();
+    restoreFromShutdownScreen();
+    return;
+  }
+
+  if (document.body.classList.contains("is-shutting-down") && event.key !== "Tab") {
+    event.preventDefault();
+    return;
+  }
+
   if (event.key === "Escape") {
     closeStartMenu();
     closeDesktopContextMenu();
@@ -147,5 +251,7 @@ document.addEventListener("keydown", (event) => {
 updateClock();
 setStartMenuState(false);
 setDesktopContextMenuState(false);
+setShuttingDownState(false);
+setShutdownScreenState(false);
 windowManager.render();
 setInterval(updateClock, 1000);
