@@ -62,6 +62,13 @@ body {
   pointer-events: none;
 }
 
+.window-layer {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - var(--taskbar-height));
+  overflow: hidden;
+}
+
 .start-menu {
   position: fixed;
   bottom: calc(var(--taskbar-height) - 2px);
@@ -146,6 +153,91 @@ body {
   image-rendering: pixelated;
 }
 
+.window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-top: 2px solid var(--surface-light);
+  border-left: 2px solid var(--surface-light);
+  border-right: 2px solid var(--surface-shadow);
+  border-bottom: 2px solid var(--surface-shadow);
+  box-shadow: inset -1px -1px 0 var(--surface-dark), inset 1px 1px 0 var(--surface-mid);
+}
+
+.window__titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+  padding: 3px 2px 3px 3px;
+  color: var(--surface-light);
+  user-select: none;
+  cursor: move;
+}
+
+.window__titlebar--active {
+  background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+}
+
+.window__titlebar--inactive {
+  background: linear-gradient(90deg, #808080 0%, #b5b5b5 100%);
+}
+
+.window__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.window__icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  image-rendering: pixelated;
+}
+
+.window__controls {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.window__control {
+  min-width: 18px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  justify-content: center;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.window__body {
+  flex: 1;
+  margin: 2px;
+  padding: 12px;
+  background: var(--surface);
+  border-top: 2px solid var(--surface-dark);
+  border-left: 2px solid var(--surface-dark);
+  border-right: 2px solid var(--surface-light);
+  border-bottom: 2px solid var(--surface-light);
+  overflow: auto;
+}
+
+.window-content__title {
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+.window-content__list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
 .taskbar {
   position: fixed;
   right: 0;
@@ -217,14 +309,35 @@ body {
 .taskbar__apps {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   height: 100%;
-  border-top: 2px solid var(--surface-dark);
-  border-left: 2px solid var(--surface-dark);
-  border-right: 2px solid var(--surface-light);
-  border-bottom: 2px solid var(--surface-light);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.03)),
-    var(--surface);
+  padding: 0 2px;
+}
+
+.taskbar__app-button {
+  min-width: 0;
+  max-width: 180px;
+  flex: 0 1 180px;
+  justify-content: flex-start;
+  font-weight: 400;
+}
+
+.taskbar__app-button--active,
+.taskbar__app-button[aria-pressed="true"] {
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  box-shadow: inset 1px 1px 0 var(--surface-dark), inset -1px -1px 0 var(--surface-mid);
+}
+
+.taskbar__app-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  image-rendering: pixelated;
 }
 
 .taskbar__clock {

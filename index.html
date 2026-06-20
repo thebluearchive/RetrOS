@@ -9,6 +9,7 @@
 <body>
   <main class="desktop" aria-label="Desktop">
     <div class="desktop__pattern" aria-hidden="true"></div>
+    <div id="window-layer" class="window-layer" aria-label="Open windows"></div>
   </main>
 
   <section
@@ -23,24 +24,24 @@
     </div>
 
     <div class="start-menu__content">
-      <button class="start-menu__item" type="button">
+      <button class="start-menu__item" type="button" data-app-id="programs">
         <img class="start-menu__icon" src="./res/png/program_manager-0.png" alt="" width="22" height="22">
         <span>Programs</span>
       </button>
-      <button class="start-menu__item" type="button">
+      <button class="start-menu__item" type="button" data-app-id="documents">
         <img class="start-menu__icon" src="./res/png/directory_open_file_mydocs_small-0.png" alt="" width="22" height="22">
         <span>Documents</span>
       </button>
-      <button class="start-menu__item" type="button">
+      <button class="start-menu__item" type="button" data-app-id="portfolio">
         <img class="start-menu__icon" src="./res/png/briefcase-0.png" alt="" width="22" height="22">
         <span>Portfolio</span>
       </button>
-      <button class="start-menu__item" type="button">
+      <button class="start-menu__item" type="button" data-app-id="contact">
         <img class="start-menu__icon" src="./res/png/message_envelope_open-0.png" alt="" width="22" height="22">
         <span>Contact</span>
       </button>
       <div class="start-menu__divider" aria-hidden="true"></div>
-      <button class="start-menu__item" type="button">
+      <button class="start-menu__item" type="button" data-app-id="shutdown">
         <img class="start-menu__icon" src="./res/png/shut_down_normal-0.png" alt="" width="22" height="22">
         <span>Shut Down...</span>
       </button>
@@ -60,13 +61,13 @@
       <span>Start</span>
     </button>
 
-    <div class="taskbar__apps" aria-label="Open applications"></div>
+    <div id="taskbar-apps" class="taskbar__apps" aria-label="Open applications"></div>
 
     <div class="taskbar__clock win95-panel" aria-live="polite">
       <span id="clock">12:00 PM</span>
     </div>
   </footer>
 
-  <script src="./app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

@@ -1,6 +1,19 @@
+import { apps } from "./apps.js";
+import { WindowManager } from "./windows.js";
+
 const clockElement = document.getElementById("clock");
+const desktopElement = document.querySelector(".desktop");
+const windowLayerElement = document.getElementById("window-layer");
+const taskbarAppsElement = document.getElementById("taskbar-apps");
 const startButton = document.getElementById("start-button");
 const startMenu = document.getElementById("start-menu");
+
+const windowManager = new WindowManager({
+  apps,
+  desktop: desktopElement,
+  windowLayer: windowLayerElement,
+  taskbarApps: taskbarAppsElement,
+});
 
 function updateClock() {
   const now = new Date();
@@ -32,6 +45,18 @@ startButton.addEventListener("click", (event) => {
 
 startMenu.addEventListener("click", (event) => {
   event.stopPropagation();
+
+  const menuItem = event.target.closest("[data-app-id]");
+  if (!menuItem) {
+    return;
+  }
+
+  const { appId } = menuItem.dataset;
+  if (windowManager.hasApp(appId)) {
+    windowManager.openWindow(appId);
+  }
+
+  closeStartMenu();
 });
 
 document.addEventListener("click", (event) => {
@@ -48,4 +73,5 @@ document.addEventListener("keydown", (event) => {
 
 updateClock();
 setStartMenuState(false);
+windowManager.render();
 setInterval(updateClock, 1000);
