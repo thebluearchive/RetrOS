@@ -1,3 +1,14 @@
+function navigate(windowItem, url, windowManager) {
+  if (windowItem.data.url === url) {
+    return;
+  }
+
+  windowItem.data.backStack.push(windowItem.data.url);
+  windowItem.data.forwardStack = [];
+  windowItem.data.url = url;
+  windowManager.syncAppWindow(windowItem.id);
+}
+
 export const browserApp = {
   id: "browser",
   title: "Internet Explorer",
@@ -82,5 +93,101 @@ export const browserApp = {
         </div>
       </div>
     `;
+  },
+  sync(element, windowItem) {
+    const browserRoot = element.querySelector(`[data-browser-window="${windowItem.id}"]`);
+    if (!browserRoot) {
+      return;
+    }
+
+    const input = browserRoot.querySelector(".browser-app__input");
+    const frame = browserRoot.querySelector(".browser-app__frame");
+    const backButton = browserRoot.querySelector('[data-browser-action="back"]');
+    const forwardButton = browserRoot.querySelector('[data-browser-action="forward"]');
+    const url = windowItem.data.url;
+
+    if (input && document.activeElement !== input && input.value !== url) {
+      input.value = url;
+    }
+
+    if (frame && frame.getAttribute("src") !== url) {
+      frame.setAttribute("src", url);
+    }
+
+    if (backButton) {
+      backButton.disabled = windowItem.data.backStack.length === 0;
+    }
+
+    if (forwardButton) {
+      forwardButton.disabled = windowItem.data.forwardStack.length === 0;
+    }
+  },
+  handleEvent({ type, event, windowItem, windowManager }) {
+    if (type === "click") {
+      const browserActionButton = event.target.closest("[data-browser-action]");
+      if (!browserActionButton) {
+        return false;
+      }
+
+      const { browserAction } = browserActionButton.dataset;
+
+      if (browserAction === "back") {
+        if (windowItem.data.backStack.length === 0) {
+          return true;
+        }
+
+        windowItem.data.forwardStack.push(windowItem.data.url);
+        windowItem.data.url = windowItem.data.backStack.pop();
+        windowManager.syncAppWindow(windowItem.id);
+        return true;
+      }
+
+      if (browserAction === "forward") {
+        if (windowItem.data.forwardStack.length === 0) {
+          return true;
+        }
+
+        windowItem.data.backStack.push(windowItem.data.url);
+        windowItem.data.url = windowItem.data.forwardStack.pop();
+        windowManager.syncAppWindow(windowItem.id);
+        return true;
+      }
+
+      if (browserAction === "home") {
+        navigate(windowItem, windowItem.data.homeUrl, windowManager);
+        return true;
+      }
+
+      if (browserAction === "refresh") {
+        const frame = windowManager.getWindowElement(windowItem.id)?.querySelector(".browser-app__frame");
+        if (frame) {
+          frame.setAttribute("src", windowItem.data.url);
+        }
+        return true;
+      }
+
+      return false;
+    }
+
+    if (type === "submit") {
+      const form = event.target.closest("[data-browser-form]");
+      if (!form) {
+        return false;
+      }
+
+      event.preventDefault();
+
+      const formData = new FormData(form);
+      const url = windowManager.normalizeUrl(formData.get("url"));
+
+      if (!url) {
+        return true;
+      }
+
+      navigate(windowItem, url, windowManager);
+      return true;
+    }
+
+    return false;
   },
 };

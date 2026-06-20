@@ -311,10 +311,7 @@ export class WindowManager {
   }
 
   handleWindowLayerClick(event) {
-    const browserActionButton = event.target.closest("[data-browser-action]");
-    if (browserActionButton) {
-      const { browserAction, windowId } = browserActionButton.dataset;
-      this.handleBrowserAction(windowId, browserAction);
+    if (this.dispatchAppEvent("click", event)) {
       return;
     }
 
@@ -358,38 +355,11 @@ export class WindowManager {
   }
 
   handleWindowLayerSubmit(event) {
-    const form = event.target.closest("[data-browser-form]");
-    if (!form) {
-      return;
-    }
-
-    event.preventDefault();
-
-    const windowId = form.dataset.browserForm;
-    const formData = new FormData(form);
-    const url = this.normalizeUrl(formData.get("url"));
-
-    if (!url) {
-      return;
-    }
-
-    this.navigateBrowserWindow(windowId, url);
+    this.dispatchAppEvent("submit", event);
   }
 
   handleWindowLayerInput(event) {
-    const editor = event.target.closest("[data-notepad-editor]");
-    if (!editor) {
-      return;
-    }
-
-    const windowId = editor.dataset.notepadEditor;
-    const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
-
-    if (!target || target.appId !== "notepad") {
-      return;
-    }
-
-    target.data.content = editor.value;
+    this.dispatchAppEvent("input", event);
   }
 
   handleTaskbarClick(event) {
@@ -622,12 +592,9 @@ export class WindowManager {
 
     this.syncResizeHandles(element, windowItem);
 
-    if (windowItem.appId === "browser") {
-      this.syncBrowserWindow(element, windowItem);
-    }
-
-    if (windowItem.appId === "notepad") {
-      this.syncNotepadWindow(element, windowItem);
+    const app = this.apps[windowItem.appId];
+    if (typeof app.sync === "function") {
+      app.sync(element, windowItem, this);
     }
   }
 
@@ -651,66 +618,6 @@ export class WindowManager {
     });
   }
 
-  syncBrowserWindow(element, windowItem) {
-    const browserRoot = element.querySelector(`[data-browser-window="${windowItem.id}"]`);
-    if (!browserRoot) {
-      return;
-    }
-
-    const input = browserRoot.querySelector(".browser-app__input");
-    const frame = browserRoot.querySelector(".browser-app__frame");
-    const backButton = browserRoot.querySelector('[data-browser-action="back"]');
-    const forwardButton = browserRoot.querySelector('[data-browser-action="forward"]');
-    const url = windowItem.data.url;
-
-    if (input && document.activeElement !== input && input.value !== url) {
-      input.value = url;
-    }
-
-    if (frame && frame.getAttribute("src") !== url) {
-      frame.setAttribute("src", url);
-    }
-
-    if (backButton) {
-      backButton.disabled = windowItem.data.backStack.length === 0;
-    }
-
-    if (forwardButton) {
-      forwardButton.disabled = windowItem.data.forwardStack.length === 0;
-    }
-  }
-
-  syncNotepadWindow(element, windowItem) {
-    const editor = element.querySelector(`[data-notepad-editor="${windowItem.id}"]`);
-    if (!editor) {
-      return;
-    }
-
-    if (document.activeElement !== editor && editor.value !== windowItem.data.content) {
-      editor.value = windowItem.data.content;
-    }
-  }
-
-  navigateBrowserWindow(windowId, url) {
-    const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
-    if (!target || target.appId !== "browser") {
-      return;
-    }
-
-    if (target.data.url === url) {
-      return;
-    }
-
-    target.data.backStack.push(target.data.url);
-    target.data.forwardStack = [];
-    target.data.url = url;
-
-    const element = this.windowLayer.querySelector(`[data-window-id="${windowId}"]`);
-    if (element) {
-      this.syncBrowserWindow(element, target);
-    }
-  }
-
   normalizeUrl(rawValue) {
     const value = String(rawValue ?? "").trim();
 
@@ -725,62 +632,48 @@ export class WindowManager {
     return `https://${value}`;
   }
 
-  handleBrowserAction(windowId, action) {
-    const target = this.state.windows.find((windowItem) => windowItem.id === windowId);
-    if (!target || target.appId !== "browser") {
-      return;
-    }
-
-    if (action === "back") {
-      if (target.data.backStack.length === 0) {
-        return;
-      }
-
-      target.data.forwardStack.push(target.data.url);
-      target.data.url = target.data.backStack.pop();
-      this.syncBrowserState(windowId, target);
-      return;
-    }
-
-    if (action === "forward") {
-      if (target.data.forwardStack.length === 0) {
-        return;
-      }
-
-      target.data.backStack.push(target.data.url);
-      target.data.url = target.data.forwardStack.pop();
-      this.syncBrowserState(windowId, target);
-      return;
-    }
-
-    if (action === "home") {
-      this.navigateBrowserWindow(windowId, target.data.homeUrl);
-      return;
-    }
-
-    if (action === "refresh") {
-      this.refreshBrowserWindow(windowId, target);
-    }
+  getWindowElement(windowId) {
+    return this.windowLayer.querySelector(`[data-window-id="${windowId}"]`);
   }
 
-  syncBrowserState(windowId, target) {
-    const element = this.windowLayer.querySelector(`[data-window-id="${windowId}"]`);
-    if (element) {
-      this.syncBrowserWindow(element, target);
+  syncAppWindow(windowId) {
+    const windowItem = this.state.windows.find((item) => item.id === windowId);
+    if (!windowItem) {
+      return;
     }
-  }
 
-  refreshBrowserWindow(windowId, target) {
-    const element = this.windowLayer.querySelector(`[data-window-id="${windowId}"]`);
+    const element = this.getWindowElement(windowId);
     if (!element) {
       return;
     }
 
-    const frame = element.querySelector(".browser-app__frame");
-    if (!frame) {
-      return;
+    const app = this.apps[windowItem.appId];
+    if (typeof app.sync === "function") {
+      app.sync(element, windowItem, this);
+    }
+  }
+
+  dispatchAppEvent(type, event) {
+    const windowElement = event.target.closest("[data-window-id]");
+    if (!windowElement) {
+      return false;
     }
 
-    frame.setAttribute("src", target.data.url);
+    const windowItem = this.state.windows.find((item) => item.id === windowElement.dataset.windowId);
+    if (!windowItem) {
+      return false;
+    }
+
+    const app = this.apps[windowItem.appId];
+    if (typeof app.handleEvent !== "function") {
+      return false;
+    }
+
+    return app.handleEvent({
+      type,
+      event,
+      windowItem,
+      windowManager: this,
+    });
   }
 }

@@ -35,4 +35,27 @@ export const notepadApp = {
       </div>
     `;
   },
+  sync(element, windowItem) {
+    const editor = element.querySelector(`[data-notepad-editor="${windowItem.id}"]`);
+    if (!editor) {
+      return;
+    }
+
+    if (document.activeElement !== editor && editor.value !== windowItem.data.content) {
+      editor.value = windowItem.data.content;
+    }
+  },
+  handleEvent({ type, event, windowItem }) {
+    if (type !== "input") {
+      return false;
+    }
+
+    const editor = event.target.closest("[data-notepad-editor]");
+    if (!editor) {
+      return false;
+    }
+
+    windowItem.data.content = editor.value;
+    return true;
+  },
 };
