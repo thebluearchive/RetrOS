@@ -24,6 +24,9 @@
   --text: #111111;
   --taskbar-height: 42px;
   --font-main: "Pixelated MS Sans Serif", "MS Sans Serif", Tahoma, Geneva, sans-serif;
+  --cursor-default: url("./res/cursors/win95-arrow.png") 0 0, default;
+  --cursor-pointer: url("./res/cursors/win95-hand.png") 7 1, pointer;
+  --cursor-wait: url("./res/cursors/win95-hourglass.png") 9 9, wait;
 }
 
 * {
@@ -45,6 +48,17 @@ body {
   line-height: 1.2;
   -webkit-font-smoothing: none;
   font-smooth: never;
+  cursor: var(--cursor-default);
+}
+
+body *,
+button,
+input,
+select,
+textarea,
+label,
+iframe {
+  cursor: inherit;
 }
 
 .desktop {
@@ -85,7 +99,7 @@ body {
   color: #ffffff;
   font: inherit;
   text-align: center;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
 }
 
 .desktop-icon__image {
@@ -138,7 +152,7 @@ body {
   color: var(--text);
   font: inherit;
   text-align: left;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
 }
 
 .context-menu__item:hover,
@@ -215,7 +229,7 @@ body {
   color: var(--text);
   font: inherit;
   text-align: left;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
 }
 
 .start-menu__item:hover,
@@ -404,7 +418,7 @@ body {
   gap: 10px;
   width: fit-content;
   color: #000000;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
 }
 
 .shutdown-app__radio {
@@ -608,7 +622,7 @@ body {
   background: transparent;
   color: #000000;
   font: inherit;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
 }
 
 .notepad-app__menu-item:hover,
@@ -677,7 +691,7 @@ body {
   color: var(--text);
   font: inherit;
   font-weight: 700;
-  cursor: pointer;
+  cursor: var(--cursor-pointer);
 }
 
 .window__control.win95-button {
@@ -786,6 +800,13 @@ body.is-shutting-down .taskbar,
 body.is-shutting-down .start-menu,
 body.is-shutting-down .context-menu {
   pointer-events: none;
+}
+
+body.is-shut-down,
+body.is-shut-down *,
+body.is-shutting-down,
+body.is-shutting-down * {
+  cursor: var(--cursor-wait) !important;
 }
 
 @media (max-width: 640px) {
