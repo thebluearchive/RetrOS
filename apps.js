@@ -1,5 +1,5 @@
 import { browserApp } from "./components/browser.js";
-import { contactApp } from "./components/contact.js";
+import { aboutApp } from "./components/about.js";
 import { documentsApp } from "./components/documents.js";
 import { myComputerApp } from "./components/my-computer.js";
 import { notepadApp } from "./components/notepad.js";
@@ -14,7 +14,7 @@ export const apps = {
   [myComputerApp.id]: myComputerApp,
   [documentsApp.id]: documentsApp,
   [projectsApp.id]: projectsApp,
-  [contactApp.id]: contactApp,
+  [aboutApp.id]: aboutApp,
   [recycleBinApp.id]: recycleBinApp,
   [virtualMachineApp.id]: virtualMachineApp,
   [shutdownApp.id]: shutdownApp,

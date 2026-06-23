@@ -1115,6 +1115,73 @@ iframe {
   text-overflow: ellipsis;
 }
 
+.about-app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.about-app__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.about-app__icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  image-rendering: pixelated;
+}
+
+.about-app__title-group {
+  min-width: 0;
+}
+
+.about-app__title {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.about-app__subtitle {
+  margin: 0;
+}
+
+.about-app__body {
+  flex: 1;
+  min-height: 0;
+  padding: 10px;
+  overflow: auto;
+  border: 2px solid;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: #ffffff;
+}
+
+.about-app__body p {
+  margin: 0 0 12px;
+}
+
+.about-app__link {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #000080;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: var(--cursor-pointer);
+}
+
+.about-app__link:hover,
+.about-app__link:focus-visible {
+  background: var(--active-blue);
+  color: #ffffff;
+  outline: none;
+}
+
 .shutdown-app {
   display: flex;
   flex-direction: column;
