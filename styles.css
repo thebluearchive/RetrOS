@@ -21,7 +21,7 @@
   --surface-shadow: #000000;
   --active-blue: #000080;
   --text: #111111;
-  --taskbar-height: 42px;
+  --taskbar-height: 50px;
   --font-main: "Pixelated MS Sans Serif", "MS Sans Serif", Tahoma, Geneva, sans-serif;
   --cursor-default: url("./res/cursors/win95-arrow.png") 0 0, default;
   --cursor-pointer: url("./res/cursors/win95-hand.png") 7 1, pointer;
@@ -43,7 +43,7 @@ body {
   background: var(--desktop-bg);
   color: var(--text);
   font-family: var(--font-main);
-  font-size: 14px;
+  font-size: 17px;
   line-height: 1.2;
   -webkit-font-smoothing: none;
   font-smooth: never;
@@ -69,12 +69,12 @@ iframe {
 
 .desktop-icons {
   position: absolute;
-  top: 12px;
-  left: 10px;
+  top: 14px;
+  left: 12px;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .desktop-selection {
@@ -90,13 +90,13 @@ iframe {
 }
 
 .desktop-icon {
-  width: 84px;
-  min-height: 72px;
+  width: 100px;
+  min-height: 86px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 4px 2px;
+  gap: 5px;
+  padding: 5px 2px;
   border: 1px solid transparent;
   background: transparent;
   color: #ffffff;
@@ -106,8 +106,8 @@ iframe {
 }
 
 .desktop-icon__image {
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   flex: 0 0 auto;
   image-rendering: pixelated;
 }
@@ -115,7 +115,7 @@ iframe {
 .desktop-icon__label {
   display: inline-block;
   max-width: 100%;
-  padding: 1px 3px;
+  padding: 1px 4px;
   line-height: 1.1;
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.75);
 }
@@ -136,8 +136,8 @@ iframe {
 .context-menu {
   position: fixed;
   z-index: 20;
-  min-width: 180px;
-  padding: 3px;
+  min-width: 216px;
+  padding: 4px;
   background: var(--surface);
   border-top: 2px solid var(--surface-light);
   border-left: 2px solid var(--surface-light);
@@ -152,8 +152,8 @@ iframe {
 
 .context-menu__item {
   width: 100%;
-  min-height: 28px;
-  padding: 5px 24px 5px 16px;
+  min-height: 34px;
+  padding: 6px 29px 6px 19px;
   border: 0;
   background: transparent;
   color: var(--text);
@@ -171,7 +171,7 @@ iframe {
 
 .context-menu__divider {
   height: 2px;
-  margin: 3px 2px;
+  margin: 4px 2px;
   background: linear-gradient(180deg, var(--surface-dark) 0 50%, var(--surface-light) 50% 100%);
 }
 
@@ -180,8 +180,8 @@ iframe {
   bottom: calc(var(--taskbar-height) - 2px);
   left: 4px;
   display: flex;
-  width: min(300px, calc(100vw - 8px));
-  min-height: 340px;
+  width: min(360px, calc(100vw - 8px));
+  min-height: 408px;
   background: var(--surface);
   border-top: 2px solid var(--surface-light);
   border-left: 2px solid var(--surface-light);
@@ -198,8 +198,8 @@ iframe {
 .start-menu__sidebar {
   flex-direction: column;
   justify-content: flex-end;
-  width: 34px;
-  padding: 14px 6px;
+  width: 41px;
+  padding: 17px 7px;
   background: linear-gradient(180deg, #7f7f7f 0%, #5d5d5d 100%);
   color: var(--surface-light);
   font-weight: 700;
@@ -209,28 +209,28 @@ iframe {
 }
 
 .start-menu__brand-windows {
-  font-size: 22px;
+  font-size: 26px;
   line-height: 0.9;
 }
 
 .start-menu__brand-version {
   color: #d9d9d9;
-  font-size: 18px;
+  font-size: 22px;
   line-height: 1;
 }
 
 .start-menu__content {
   flex: 1;
-  padding: 6px 4px;
+  padding: 7px 5px;
 }
 
 .start-menu__item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  min-height: 38px;
-  padding: 6px 10px;
+  min-height: 46px;
+  padding: 7px 12px;
   background: transparent;
   border: 0;
   color: var(--text);
@@ -248,13 +248,13 @@ iframe {
 
 .start-menu__divider {
   height: 2px;
-  margin: 4px 2px;
+  margin: 5px 2px;
   background: linear-gradient(180deg, var(--surface-dark) 0 50%, var(--surface-light) 50% 100%);
 }
 
 .start-menu__icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   flex: 0 0 auto;
   image-rendering: pixelated;
 }
@@ -277,9 +277,9 @@ iframe {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 24px;
-  padding: 3px 2px 3px 3px;
+  gap: 10px;
+  min-height: 29px;
+  padding: 4px 2px 4px 4px;
   color: var(--surface-light);
   user-select: none;
   cursor: move;
@@ -296,15 +296,15 @@ iframe {
 .window__title {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .window__icon {
-  width: 16px;
-  height: 16px;
+  width: 19px;
+  height: 19px;
   flex: 0 0 auto;
   image-rendering: pixelated;
 }
@@ -315,9 +315,9 @@ iframe {
 }
 
 .window__control {
-  min-width: 16px;
-  width: 16px;
-  height: 14px;
+  min-width: 19px;
+  width: 19px;
+  height: 17px;
   padding: 0;
   justify-content: center;
   font-weight: 700;
@@ -329,7 +329,7 @@ iframe {
 .window__body {
   flex: 1;
   margin: 2px;
-  padding: 12px;
+  padding: 14px;
   background: var(--surface);
   border-top: 2px solid var(--surface-dark);
   border-left: 2px solid var(--surface-dark);
@@ -340,8 +340,8 @@ iframe {
 
 .window__resize-handle {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -373,35 +373,35 @@ iframe {
 }
 
 .window-content__title {
-  margin: 0 0 10px;
-  font-size: 14px;
+  margin: 0 0 12px;
+  font-size: 17px;
 }
 
 .window-content__list {
-  margin: 10px 0 0;
-  padding-left: 18px;
+  margin: 12px 0 0;
+  padding-left: 22px;
 }
 
 .shutdown-app {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   height: 100%;
 }
 
 .shutdown-app__body {
   display: flex;
   align-items: flex-start;
-  gap: 18px;
-  padding: 2px 4px 0 2px;
+  gap: 22px;
+  padding: 2px 5px 0 2px;
 }
 
 .shutdown-app__icon {
-  width: 34px;
-  height: 34px;
+  width: 41px;
+  height: 41px;
   flex: 0 0 auto;
-  margin-top: 8px;
+  margin-top: 10px;
   image-rendering: pixelated;
 }
 
@@ -410,27 +410,27 @@ iframe {
 }
 
 .shutdown-app__prompt {
-  margin: 2px 0 10px;
+  margin: 2px 0 12px;
 }
 
 .shutdown-app__options {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .shutdown-app__option {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: fit-content;
   color: #000000;
   cursor: var(--cursor-pointer);
 }
 
 .shutdown-app__radio {
-  width: 14px;
-  height: 14px;
+  width: 17px;
+  height: 17px;
   margin: 0;
   accent-color: #000000;
 }
@@ -438,18 +438,18 @@ iframe {
 .shutdown-app__actions {
   display: flex;
   justify-content: center;
-  gap: 12px;
-  padding: 0 8px 2px;
+  gap: 14px;
+  padding: 0 10px 2px;
 }
 
 .shutdown-app__button {
-  min-width: 122px;
+  min-width: 146px;
 }
 
 .browser-app {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   height: 100%;
 }
 
@@ -457,7 +457,7 @@ iframe {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 4px 4px 3px;
+  padding: 5px 5px 4px;
   background: linear-gradient(180deg, #efefef 0%, #d8d8d8 55%, #cfcfcf 100%);
   border-bottom: 1px solid #8b8b8b;
 }
@@ -482,22 +482,22 @@ iframe {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
 }
 
 .browser-app__nav-button {
-  min-width: 28px;
-  height: 24px;
-  padding: 0 8px;
+  min-width: 34px;
+  height: 29px;
+  padding: 0 10px;
   font-weight: 400;
   justify-content: center;
 }
 
 .browser-app__nav-button--toolbar.win95-button {
-  min-width: 56px;
-  width: 56px;
-  height: 42px;
-  padding: 2px 4px 1px;
+  min-width: 67px;
+  width: 67px;
+  height: 50px;
+  padding: 2px 5px 1px;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
@@ -508,14 +508,14 @@ iframe {
 }
 
 .browser-app__nav-label {
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1;
   white-space: nowrap;
 }
 
 .browser-app__nav-icon {
-  width: 20px;
-  height: 16px;
+  width: 24px;
+  height: 19px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -533,46 +533,46 @@ iframe {
 }
 
 .browser-app__arrow--back {
-  border-top: 5px solid transparent;
-  border-right: 7px solid #000000;
-  border-bottom: 5px solid transparent;
+  border-top: 6px solid transparent;
+  border-right: 8px solid #000000;
+  border-bottom: 6px solid transparent;
 }
 
 .browser-app__arrow--forward {
-  border-top: 5px solid transparent;
-  border-left: 7px solid #000000;
-  border-bottom: 5px solid transparent;
+  border-top: 6px solid transparent;
+  border-left: 8px solid #000000;
+  border-bottom: 6px solid transparent;
 }
 
 .browser-app__nav-caret {
   position: absolute;
-  right: 3px;
-  bottom: 4px;
+  right: 4px;
+  bottom: 5px;
   width: 0;
   height: 0;
-  border-left: 3px solid transparent;
-  border-right: 3px solid transparent;
-  border-top: 4px solid #555555;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #555555;
 }
 
 .browser-app__toolbar-icon {
-  width: 16px;
-  height: 16px;
+  width: 19px;
+  height: 19px;
   image-rendering: pixelated;
   flex: 0 0 auto;
 }
 
 .browser-app__brand-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   image-rendering: pixelated;
 }
 
 .browser-app__input {
   width: 100%;
   min-width: 0;
-  height: 24px;
-  padding: 2px 6px;
+  height: 29px;
+  padding: 2px 7px;
   border: 2px solid;
   border-top-color: var(--surface-shadow);
   border-left-color: var(--surface-shadow);
@@ -584,9 +584,9 @@ iframe {
 }
 
 .browser-app__button {
-  min-width: 54px;
-  height: 24px;
-  padding: 0 10px;
+  min-width: 65px;
+  height: 29px;
+  padding: 0 12px;
   font-weight: 400;
 }
 
@@ -619,12 +619,12 @@ iframe {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 1px 2px 4px;
+  padding: 1px 2px 5px;
 }
 
 .notepad-app__menu-item {
   min-width: 0;
-  padding: 2px 8px;
+  padding: 2px 10px;
   border: 1px solid transparent;
   background: transparent;
   color: #000000;
@@ -643,7 +643,7 @@ iframe {
   flex: 1;
   display: block;
   resize: none;
-  padding: 6px;
+  padding: 7px;
   border: 2px solid;
   border-top-color: var(--surface-shadow);
   border-left-color: var(--surface-shadow);
@@ -652,7 +652,7 @@ iframe {
   background: #ffffff;
   color: #000000;
   font-family: "Pixelated MS Sans Serif", "MS Sans Serif", monospace;
-  font-size: 14px;
+  font-size: 17px;
   line-height: 1.25;
   white-space: pre-wrap;
 }
@@ -668,9 +668,9 @@ iframe {
   left: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   height: var(--taskbar-height);
-  padding: 4px 6px;
+  padding: 5px 7px;
   background: var(--surface);
   border-top: 2px solid var(--surface-light);
   box-shadow: inset 0 1px 0 var(--surface-mid);
@@ -685,10 +685,10 @@ iframe {
 .win95-button {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-width: 92px;
-  height: 30px;
-  padding: 0 10px;
+  gap: 7px;
+  min-width: 110px;
+  height: 36px;
+  padding: 0 12px;
   background: var(--surface);
   border-top-color: var(--surface-light);
   border-left-color: var(--surface-light);
@@ -702,9 +702,9 @@ iframe {
 }
 
 .window__control.win95-button {
-  min-width: 18px;
-  width: 18px;
-  height: 18px;
+  min-width: 22px;
+  width: 22px;
+  height: 22px;
   padding: 0;
   gap: 0;
 }
@@ -731,8 +731,8 @@ iframe {
 }
 
 .start-button__logo {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
   image-rendering: pixelated;
 }
@@ -742,15 +742,15 @@ iframe {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   height: 100%;
   padding: 0 2px;
 }
 
 .taskbar__app-button {
   min-width: 0;
-  max-width: 180px;
-  flex: 0 1 180px;
+  max-width: 216px;
+  flex: 0 1 216px;
   justify-content: flex-start;
   font-weight: 400;
 }
@@ -765,26 +765,26 @@ iframe {
 }
 
 .taskbar__app-icon {
-  width: 16px;
-  height: 16px;
+  width: 19px;
+  height: 19px;
   flex: 0 0 auto;
   image-rendering: pixelated;
 }
 
 .taskbar__clock {
-  min-width: 92px;
-  height: 30px;
+  min-width: 110px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 10px;
+  padding: 0 12px;
   background: var(--surface);
   border-top-color: var(--surface-dark);
   border-left-color: var(--surface-dark);
   border-right-color: var(--surface-light);
   border-bottom-color: var(--surface-light);
   box-shadow: inset 1px 1px 0 #909090;
-  font-size: 14px;
+  font-size: 17px;
 }
 
 .shutdown-screen {
@@ -824,17 +824,17 @@ body.is-shutting-down * {
   }
 
   .taskbar {
-    gap: 6px;
-    padding: 4px;
+    gap: 7px;
+    padding: 5px;
   }
 
   .start-button {
-    min-width: 84px;
-    padding: 0 8px;
+    min-width: 101px;
+    padding: 0 10px;
   }
 
   .taskbar__clock {
-    min-width: 78px;
-    padding: 0 8px;
+    min-width: 94px;
+    padding: 0 10px;
   }
 }

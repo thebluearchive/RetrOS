@@ -3,16 +3,16 @@ export const shutdownApp = {
   title: "Shut Down Windows",
   icon: "./res/png/shut_down_normal-0.png",
   defaultSize: {
-    width: 400,
-    height: 214,
+    width: 480,
+    height: 257,
   },
   minSize: {
-    width: 400,
-    height: 214,
+    width: 480,
+    height: 257,
   },
   defaultPosition: {
-    x: 112,
-    y: 88,
+    x: 134,
+    y: 106,
   },
   render(windowItem) {
     const shutdownId = `shutdown-choice-${windowItem.id}`;

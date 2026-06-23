@@ -3,16 +3,16 @@ export const myComputerApp = {
   title: "My Computer",
   icon: "./res/png/computer_explorer-0.png",
   defaultSize: {
-    width: 460,
-    height: 320,
+    width: 552,
+    height: 384,
   },
   minSize: {
-    width: 320,
-    height: 220,
+    width: 384,
+    height: 264,
   },
   defaultPosition: {
-    x: 88,
-    y: 72,
+    x: 106,
+    y: 86,
   },
   render() {
     return `

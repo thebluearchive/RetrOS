@@ -3,16 +3,16 @@ export const portfolioApp = {
   title: "Portfolio",
   icon: "./res/png/briefcase-0.png",
   defaultSize: {
-    width: 420,
-    height: 300,
+    width: 504,
+    height: 360,
   },
   minSize: {
-    width: 300,
-    height: 220,
+    width: 360,
+    height: 264,
   },
   defaultPosition: {
-    x: 72,
-    y: 56,
+    x: 86,
+    y: 67,
   },
   render() {
     return `

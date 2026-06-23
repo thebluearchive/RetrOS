@@ -14,16 +14,16 @@ export const browserApp = {
   title: "Internet Explorer",
   icon: "./res/png/msie1-0.png",
   defaultSize: {
-    width: 720,
-    height: 500,
+    width: 864,
+    height: 600,
   },
   minSize: {
-    width: 420,
-    height: 320,
+    width: 504,
+    height: 384,
   },
   defaultPosition: {
-    x: 48,
-    y: 32,
+    x: 58,
+    y: 38,
   },
   createState() {
     return {

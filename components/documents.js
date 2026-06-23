@@ -3,16 +3,16 @@ export const documentsApp = {
   title: "Documents",
   icon: "./res/png/directory_open_file_mydocs_small-0.png",
   defaultSize: {
-    width: 420,
-    height: 280,
+    width: 504,
+    height: 336,
   },
   minSize: {
-    width: 300,
-    height: 220,
+    width: 360,
+    height: 264,
   },
   defaultPosition: {
-    x: 116,
-    y: 84,
+    x: 139,
+    y: 101,
   },
   render() {
     return `

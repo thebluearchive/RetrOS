@@ -60,7 +60,7 @@ function setDesktopContextMenuState(isOpen, x = 0, y = 0) {
   const menuWidth = desktopContextMenuElement.offsetWidth;
   const menuHeight = desktopContextMenuElement.offsetHeight;
   const maxX = window.innerWidth - menuWidth - 4;
-  const maxY = window.innerHeight - menuHeight - 46;
+  const maxY = window.innerHeight - menuHeight - 55;
 
   desktopContextMenuElement.style.left = `${Math.max(4, Math.min(x, maxX))}px`;
   desktopContextMenuElement.style.top = `${Math.max(4, Math.min(y, maxY))}px`;

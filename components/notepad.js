@@ -3,16 +3,16 @@ export const notepadApp = {
   title: "Notepad",
   icon: "./res/png/notepad-0.png",
   defaultSize: {
-    width: 520,
-    height: 360,
+    width: 624,
+    height: 432,
   },
   minSize: {
-    width: 320,
-    height: 240,
+    width: 384,
+    height: 288,
   },
   defaultPosition: {
-    x: 140,
-    y: 72,
+    x: 168,
+    y: 86,
   },
   createState() {
     return {

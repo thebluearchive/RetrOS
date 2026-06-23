@@ -3,16 +3,16 @@ export const recycleBinApp = {
   title: "Recycle Bin",
   icon: "./res/png/recycle_bin_empty-0.png",
   defaultSize: {
-    width: 320,
-    height: 220,
+    width: 384,
+    height: 264,
   },
   minSize: {
-    width: 260,
-    height: 180,
+    width: 312,
+    height: 216,
   },
   defaultPosition: {
-    x: 164,
-    y: 120,
+    x: 197,
+    y: 144,
   },
   render() {
     return `

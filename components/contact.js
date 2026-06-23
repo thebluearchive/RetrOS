@@ -3,16 +3,16 @@ export const contactApp = {
   title: "Contact",
   icon: "./res/png/message_envelope_open-0.png",
   defaultSize: {
-    width: 360,
-    height: 220,
+    width: 432,
+    height: 264,
   },
   minSize: {
-    width: 280,
-    height: 180,
+    width: 336,
+    height: 216,
   },
   defaultPosition: {
-    x: 132,
-    y: 96,
+    x: 158,
+    y: 115,
   },
   render() {
     return `

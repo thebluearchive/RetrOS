@@ -57,8 +57,8 @@ export class WindowManager {
       y: app.defaultPosition.y,
       width: app.defaultSize.width,
       height: app.defaultSize.height,
-      minWidth: app.minSize?.width ?? 240,
-      minHeight: app.minSize?.height ?? 160,
+      minWidth: app.minSize?.width ?? 288,
+      minHeight: app.minSize?.height ?? 192,
       isMinimized: false,
       isMaximized: false,
       restoreBounds: null,
@@ -199,8 +199,8 @@ export class WindowManager {
       return;
     }
 
-    const maxX = Math.max(0, this.desktop.clientWidth - 120);
-    const maxY = Math.max(0, this.desktop.clientHeight - 80);
+    const maxX = Math.max(0, this.desktop.clientWidth - 144);
+    const maxY = Math.max(0, this.desktop.clientHeight - 96);
 
     target.x = clamp(x, 0, maxX);
     target.y = clamp(y, 0, maxY);
