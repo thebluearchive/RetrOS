@@ -169,6 +169,11 @@ iframe {
   outline: none;
 }
 
+.context-menu__item:disabled {
+  color: #6a6a6a;
+  background: transparent;
+}
+
 .context-menu__divider {
   height: 2px;
   margin: 4px 2px;
@@ -882,6 +887,120 @@ iframe {
   margin-top: 18px;
 }
 
+.recycle-bin-app {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+}
+
+.recycle-bin-app__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 8px;
+}
+
+.recycle-bin-app__toolbar-button {
+  min-width: 126px;
+  height: 30px;
+  padding: 0 10px;
+  font-weight: 400;
+}
+
+.recycle-bin-app__status {
+  margin-left: auto;
+  color: #2a2a2a;
+}
+
+.recycle-bin-app__header,
+.recycle-bin-app__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 110px 140px;
+  align-items: center;
+  gap: 12px;
+}
+
+.recycle-bin-app__header {
+  padding: 5px 10px;
+  border: 2px solid;
+  border-top-color: var(--surface-light);
+  border-left-color: var(--surface-light);
+  border-right-color: var(--surface-shadow);
+  border-bottom-color: var(--surface-shadow);
+  background: var(--surface-mid);
+  font-weight: 700;
+}
+
+.recycle-bin-app__list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 2px solid;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: #ffffff;
+}
+
+.recycle-bin-app__row {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  color: #000000;
+  font: inherit;
+  text-align: left;
+  cursor: var(--cursor-pointer);
+}
+
+.recycle-bin-app__row:hover,
+.recycle-bin-app__row:focus-visible {
+  background: #dfe8ff;
+  outline: none;
+}
+
+.recycle-bin-app__row--selected,
+.recycle-bin-app__row[aria-pressed="true"] {
+  background: var(--active-blue);
+  color: #ffffff;
+}
+
+.recycle-bin-app__cell {
+  min-width: 0;
+}
+
+.recycle-bin-app__cell--name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recycle-bin-app__cell--action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.recycle-bin-app__item-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  image-rendering: pixelated;
+}
+
+.recycle-bin-app__restore-label {
+  font-weight: 700;
+}
+
+.recycle-bin-app__empty {
+  margin: 0;
+  padding: 18px 14px;
+}
+
 .taskbar {
   position: fixed;
   z-index: 25;
@@ -950,6 +1069,12 @@ iframe {
 .win95-button:focus-visible {
   outline: 1px dotted var(--surface-shadow);
   outline-offset: -6px;
+}
+
+.win95-button:disabled {
+  color: #6a6a6a;
+  text-shadow: 1px 1px 0 #ffffff;
+  cursor: var(--cursor-default);
 }
 
 .start-button__logo {

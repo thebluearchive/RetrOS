@@ -11,9 +11,120 @@ const desktopIconsElement = document.querySelector(".desktop-icons");
 const desktopContextMenuElement = document.getElementById("desktop-context-menu");
 const shutdownScreenElement = document.getElementById("shutdown-screen");
 const shutdownSequenceDuration = 2000;
+const recycleBinEmptyIcon = "./res/png/recycle_bin_empty-0.png";
+const recycleBinFullIcon = "./res/png/recycle_bin_full-0.png";
 let shutdownTimeoutIds = [];
 const desktopSelectionElement = document.createElement("div");
 let desktopSelectionState = null;
+let desktopContextMenuState = {
+  type: "desktop",
+  itemId: null,
+};
+
+const initialDesktopItems = [
+  {
+    id: "recycle-bin",
+    appId: "recycle-bin",
+    title: "Recycle Bin",
+    icon: recycleBinEmptyIcon,
+    order: 0,
+    isProtected: true,
+  },
+  {
+    id: "my-computer",
+    appId: "my-computer",
+    title: "My Computer",
+    icon: "./res/png/computer_explorer-0.png",
+    order: 1,
+  },
+  {
+    id: "documents",
+    appId: "documents",
+    title: "Documents",
+    icon: "./res/png/directory_open_file_mydocs_small-0.png",
+    order: 2,
+  },
+  {
+    id: "notepad",
+    appId: "notepad",
+    title: "Notepad",
+    icon: "./res/png/notepad-0.png",
+    order: 3,
+  },
+  {
+    id: "browser",
+    appId: "browser",
+    title: "Internet Explorer",
+    icon: "./res/png/msie1-0.png",
+    order: 4,
+  },
+];
+
+const system = {
+  desktopItems: initialDesktopItems.map((item) => ({ ...item })),
+  recycleBinItems: [],
+  getRecycleBinIcon() {
+    return this.recycleBinItems.length > 0 ? recycleBinFullIcon : recycleBinEmptyIcon;
+  },
+  getDesktopItem(itemId) {
+    return this.desktopItems.find((item) => item.id === itemId) ?? null;
+  },
+  deleteDesktopItems(itemIds) {
+    const ids = new Set(itemIds);
+    const removedItems = [];
+
+    this.desktopItems = this.desktopItems.filter((item) => {
+      if (!ids.has(item.id) || item.isProtected) {
+        return true;
+      }
+
+      removedItems.push({
+        ...item,
+        deletedAt: Date.now(),
+      });
+      return false;
+    });
+
+    if (removedItems.length === 0) {
+      return;
+    }
+
+    this.recycleBinItems = [...removedItems, ...this.recycleBinItems];
+    renderDesktopIcons();
+    windowManager.syncWindowsByAppId("recycle-bin");
+  },
+  restoreRecycleBinItems(itemIds) {
+    const ids = new Set(itemIds);
+    const restoredItems = [];
+
+    this.recycleBinItems = this.recycleBinItems.filter((item) => {
+      if (!ids.has(item.id)) {
+        return true;
+      }
+
+      const { deletedAt, ...desktopItem } = item;
+      restoredItems.push(desktopItem);
+      return false;
+    });
+
+    if (restoredItems.length === 0) {
+      return;
+    }
+
+    this.desktopItems = [...this.desktopItems, ...restoredItems].sort((left, right) => left.order - right.order);
+    renderDesktopIcons();
+    windowManager.syncWindowsByAppId("recycle-bin");
+  },
+  emptyRecycleBin() {
+    if (this.recycleBinItems.length === 0) {
+      return;
+    }
+
+    this.recycleBinItems = [];
+    renderDesktopIcons();
+    windowManager.syncWindowsByAppId("recycle-bin");
+  },
+};
 
 desktopSelectionElement.className = "desktop-selection desktop-selection--hidden";
 desktopSelectionElement.setAttribute("aria-hidden", "true");
@@ -24,6 +135,7 @@ const windowManager = new WindowManager({
   desktop: desktopElement,
   windowLayer: windowLayerElement,
   taskbarApps: taskbarAppsElement,
+  system,
 });
 
 function updateClock() {
@@ -50,6 +162,7 @@ function closeStartMenu() {
 }
 
 function setDesktopContextMenuState(isOpen, x = 0, y = 0) {
+  renderDesktopContextMenu();
   desktopContextMenuElement.classList.toggle("context-menu--hidden", !isOpen);
   desktopContextMenuElement.setAttribute("aria-hidden", String(!isOpen));
 
@@ -67,7 +180,94 @@ function setDesktopContextMenuState(isOpen, x = 0, y = 0) {
 }
 
 function closeDesktopContextMenu() {
+  desktopContextMenuElement.dataset.contextItemId = "";
   setDesktopContextMenuState(false);
+}
+
+function getSelectedDesktopItemIds() {
+  return Array.from(desktopIconsElement.querySelectorAll(".desktop-icon--selected"))
+    .map((icon) => icon.dataset.desktopItemId)
+    .filter(Boolean);
+}
+
+function deleteSelectedDesktopItems() {
+  const selectedItemIds = getSelectedDesktopItemIds();
+  if (selectedItemIds.length === 0) {
+    return false;
+  }
+
+  system.deleteDesktopItems(selectedItemIds);
+  return true;
+}
+
+function renderDesktopContextMenu() {
+  if (desktopContextMenuState.type === "item") {
+    const item = system.getDesktopItem(desktopContextMenuState.itemId);
+    if (!item) {
+      desktopContextMenuState = { type: "desktop", itemId: null };
+      renderDesktopContextMenu();
+      return;
+    }
+
+    desktopContextMenuElement.dataset.contextItemId = item.id;
+
+    const isRecycleBin = item.appId === "recycle-bin";
+    const canEmpty = system.recycleBinItems.length > 0;
+
+    desktopContextMenuElement.innerHTML = `
+      <button class="context-menu__item" type="button" data-context-action="open-item">Open</button>
+      ${
+        isRecycleBin
+          ? ""
+          : '<button class="context-menu__item" type="button" data-context-action="delete-item">Delete</button>'
+      }
+      ${
+        isRecycleBin
+          ? `
+            <div class="context-menu__divider" aria-hidden="true"></div>
+            <button class="context-menu__item" type="button" data-context-action="empty-recycle-bin" ${canEmpty ? "" : "disabled"}>
+              Empty Recycle Bin
+            </button>
+          `
+          : ""
+      }
+    `;
+    return;
+  }
+
+  desktopContextMenuElement.dataset.contextItemId = "";
+
+  desktopContextMenuElement.innerHTML = `
+    <button class="context-menu__item" type="button" data-context-action="open-browser">Open Internet Explorer</button>
+    <button class="context-menu__item" type="button" data-context-action="refresh-desktop">Refresh</button>
+    <div class="context-menu__divider" aria-hidden="true"></div>
+    <button class="context-menu__item" type="button" data-context-action="open-computer">Properties</button>
+  `;
+}
+
+function renderDesktopIcons() {
+  const selectedIds = new Set(getSelectedDesktopItemIds());
+
+  desktopIconsElement.innerHTML = system.desktopItems
+    .sort((left, right) => left.order - right.order)
+    .map((item) => {
+      const isSelected = selectedIds.has(item.id);
+      const icon = item.appId === "recycle-bin" ? system.getRecycleBinIcon() : item.icon;
+
+      return `
+        <button
+          class="desktop-icon ${isSelected ? "desktop-icon--selected" : ""}"
+          type="button"
+          data-desktop-item-id="${item.id}"
+          data-app-id="${item.appId}"
+          aria-selected="${String(isSelected)}"
+        >
+          <img class="desktop-icon__image" src="${icon}" alt="" width="32" height="32">
+          <span class="desktop-icon__label">${item.title}</span>
+        </button>
+      `;
+    })
+    .join("");
 }
 
 function setDesktopSelectionState(isVisible, rect = null) {
@@ -193,7 +393,11 @@ desktopElement.addEventListener("mousedown", (event) => {
     return;
   }
 
-  if (event.target.closest(".window") || event.target.closest(".desktop-icon")) {
+  if (
+    event.target.closest(".window") ||
+    event.target.closest(".desktop-icon") ||
+    event.target.closest(".context-menu")
+  ) {
     return;
   }
 
@@ -241,6 +445,39 @@ desktopIconsElement.addEventListener("click", (event) => {
   icon.setAttribute("aria-selected", "true");
 });
 
+desktopIconsElement.addEventListener("keydown", (event) => {
+  const icon = event.target.closest(".desktop-icon");
+  if (!icon) {
+    return;
+  }
+
+  if (event.key === "Delete" || event.key === "Backspace") {
+    event.preventDefault();
+    clearDesktopIconSelection();
+    icon.classList.add("desktop-icon--selected");
+    icon.setAttribute("aria-selected", "true");
+    system.deleteDesktopItems([icon.dataset.desktopItemId]);
+  }
+});
+
+desktopIconsElement.addEventListener("contextmenu", (event) => {
+  const icon = event.target.closest(".desktop-icon");
+  if (!icon) {
+    return;
+  }
+
+  event.preventDefault();
+  clearDesktopIconSelection();
+  icon.classList.add("desktop-icon--selected");
+  icon.setAttribute("aria-selected", "true");
+  closeStartMenu();
+  desktopContextMenuState = {
+    type: "item",
+    itemId: icon.dataset.desktopItemId ?? null,
+  };
+  setDesktopContextMenuState(true, event.clientX, event.clientY);
+});
+
 desktopElement.addEventListener("contextmenu", (event) => {
   if (event.target.closest(".window") || event.target.closest(".desktop-icon")) {
     return;
@@ -248,6 +485,10 @@ desktopElement.addEventListener("contextmenu", (event) => {
 
   event.preventDefault();
   closeStartMenu();
+  desktopContextMenuState = {
+    type: "desktop",
+    itemId: null,
+  };
   setDesktopContextMenuState(true, event.clientX, event.clientY);
 });
 
@@ -304,6 +545,7 @@ desktopContextMenuElement.addEventListener("click", (event) => {
   }
 
   const { contextAction } = menuItem.dataset;
+  const contextItemId = desktopContextMenuElement.dataset.contextItemId || desktopContextMenuState.itemId;
 
   if (contextAction === "open-browser") {
     windowManager.openWindow("browser");
@@ -315,6 +557,23 @@ desktopContextMenuElement.addEventListener("click", (event) => {
 
   if (contextAction === "open-computer") {
     windowManager.openWindow("my-computer");
+  }
+
+  if (contextAction === "open-item" && contextItemId) {
+    const item = system.getDesktopItem(contextItemId);
+    if (item && windowManager.hasApp(item.appId)) {
+      windowManager.openWindow(item.appId);
+    }
+  }
+
+  if (contextAction === "delete-item" && contextItemId) {
+    system.deleteDesktopItems([contextItemId]);
+  }
+
+  if (contextAction === "empty-recycle-bin") {
+    if (system.recycleBinItems.length > 0) {
+      system.emptyRecycleBin();
+    }
   }
 
   closeDesktopContextMenu();
@@ -389,8 +648,18 @@ document.addEventListener("keydown", (event) => {
     closeStartMenu();
     closeDesktopContextMenu();
   }
+
+  if (
+    (event.key === "Delete" || event.key === "Backspace") &&
+    !(event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable='true']"))
+  ) {
+    if (deleteSelectedDesktopItems()) {
+      event.preventDefault();
+    }
+  }
 });
 
+renderDesktopIcons();
 updateClock();
 setStartMenuState(false);
 setDesktopContextMenuState(false);

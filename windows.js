@@ -3,11 +3,12 @@ function clamp(value, min, max) {
 }
 
 export class WindowManager {
-  constructor({ apps, desktop, windowLayer, taskbarApps }) {
+  constructor({ apps, desktop, windowLayer, taskbarApps, system = null }) {
     this.apps = apps;
     this.desktop = desktop;
     this.windowLayer = windowLayer;
     this.taskbarApps = taskbarApps;
+    this.system = system;
     this.state = {
       windows: [],
       nextWindowId: 1,
@@ -580,7 +581,7 @@ export class WindowManager {
     `;
 
     const body = element.querySelector(".window__body");
-    body.innerHTML = app.render(windowItem);
+    body.innerHTML = app.render(windowItem, this.system, this);
     this.syncResizeHandles(element, windowItem);
 
     return element;
@@ -623,7 +624,7 @@ export class WindowManager {
 
     const app = this.apps[windowItem.appId];
     if (typeof app.sync === "function") {
-      app.sync(element, windowItem, this);
+      app.sync(element, windowItem, this, this.system);
     }
   }
 
@@ -687,8 +688,16 @@ export class WindowManager {
 
     const app = this.apps[windowItem.appId];
     if (typeof app.sync === "function") {
-      app.sync(element, windowItem, this);
+      app.sync(element, windowItem, this, this.system);
     }
+  }
+
+  syncWindowsByAppId(appId) {
+    this.state.windows
+      .filter((windowItem) => windowItem.appId === appId)
+      .forEach((windowItem) => {
+        this.syncAppWindow(windowItem.id);
+      });
   }
 
   async dispatchAppEvent(type, event) {
@@ -712,6 +721,7 @@ export class WindowManager {
       event,
       windowItem,
       windowManager: this,
+      system: this.system,
     });
   }
 }
