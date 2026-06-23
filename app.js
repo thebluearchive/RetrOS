@@ -69,11 +69,18 @@ const initialDesktopItems = [
     order: 4,
   },
   {
+    id: "paint",
+    appId: "paint",
+    title: "Paint",
+    icon: "./res/png/paint_file-0.png",
+    order: 5,
+  },
+  {
     id: "virtual-machine",
     appId: "virtual-machine",
     title: "Virtual Machine",
     icon: "./res/png/computer_2-0.png",
-    order: 5,
+    order: 6,
   },
 ];
 

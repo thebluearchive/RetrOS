@@ -27,6 +27,15 @@ const COMPUTER_ITEMS = [
     size: "42 KB",
   },
   {
+    id: "paint",
+    title: "Paint",
+    subtitle: "Bitmap drawing program",
+    icon: "./res/png/paint_file-0.png",
+    appId: "paint",
+    kind: "Application",
+    size: "86 KB",
+  },
+  {
     id: "browser",
     title: "Internet Explorer",
     subtitle: "Browse the web",

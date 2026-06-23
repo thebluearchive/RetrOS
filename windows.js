@@ -399,7 +399,7 @@ export class WindowManager {
     this.toggleTaskbarWindow(button.dataset.windowId);
   }
 
-  handleWindowLayerMouseDown(event) {
+  async handleWindowLayerMouseDown(event) {
     const resizeHandle = event.target.closest("[data-resize-edge]");
     if (resizeHandle) {
       this.startResize(event, resizeHandle);
@@ -407,6 +407,10 @@ export class WindowManager {
     }
 
     if (event.target.closest("[data-action]")) {
+      return;
+    }
+
+    if (await this.dispatchAppEvent("mousedown", event)) {
       return;
     }
 
