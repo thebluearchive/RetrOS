@@ -124,6 +124,19 @@ function clearCanvas(windowManager, windowItem) {
   canvas.dataset.paintInitialized = "true";
 }
 
+function renderPaintFile(canvas, paintFile) {
+  const context = canvas.getContext("2d");
+  context.fillStyle = paintFile?.background ?? "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  (paintFile?.rects ?? []).forEach(([color, x, y, width, height]) => {
+    context.fillStyle = color;
+    context.fillRect(x, y, width, height);
+  });
+
+  canvas.dataset.paintInitialized = "true";
+}
+
 function downloadCanvas(windowManager, windowItem) {
   const canvas = getCanvas(windowManager, windowItem);
   if (!canvas) {
@@ -133,7 +146,7 @@ function downloadCanvas(windowManager, windowItem) {
   initializeCanvas(canvas);
   const link = document.createElement("a");
   link.href = canvas.toDataURL("image/png");
-  link.download = "paint.png";
+  link.download = (windowItem.data.fileName || "paint.bmp").replace(/\.[^.]+$/, ".png");
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -194,7 +207,16 @@ function renderMenu(menuName, items, activeMenu) {
 }
 
 function handleMenuAction(action, windowItem, windowManager) {
-  if (action === "new" || action === "clear") {
+  if (action === "new") {
+    windowItem.data.fileName = "Untitled.bmp";
+    windowItem.data.paintFile = null;
+    windowItem.data.loadedPaintFileId = null;
+    clearCanvas(windowManager, windowItem);
+    syncPaint(windowManager, windowItem);
+    return true;
+  }
+
+  if (action === "clear") {
     clearCanvas(windowManager, windowItem);
     syncPaint(windowManager, windowItem);
     return true;
@@ -290,7 +312,23 @@ export const paintApp = {
       brushSize: 4,
       activeMenu: null,
       isAboutOpen: false,
+      fileName: "Untitled.bmp",
+      paintFile: null,
+      loadedPaintFileId: null,
     };
+  },
+  applyOpenOptions(windowItem, options) {
+    if (typeof options.fileName === "string" && options.fileName.trim()) {
+      windowItem.data.fileName = options.fileName.trim();
+    }
+
+    if (options.paintFile) {
+      windowItem.data.paintFile = options.paintFile;
+      windowItem.data.loadedPaintFileId = null;
+    }
+
+    windowItem.data.activeMenu = null;
+    windowItem.data.isAboutOpen = false;
   },
   render(windowItem) {
     const isPencil = windowItem.data.tool === "pencil";
@@ -330,7 +368,7 @@ export const paintApp = {
           </div>
         </div>
         <div class="paint-app__status">
-          Tool: ${windowItem.data.tool} | Color: ${windowItem.data.color} | Size: ${windowItem.data.brushSize}px
+          ${windowItem.data.fileName} | Tool: ${windowItem.data.tool} | Color: ${windowItem.data.color} | Size: ${windowItem.data.brushSize}px
         </div>
         <div
           class="paint-app__dialog-layer ${windowItem.data.isAboutOpen ? "" : "paint-app__dialog-layer--hidden"}"
@@ -357,6 +395,12 @@ export const paintApp = {
     const root = element.querySelector(`[data-paint-window="${windowItem.id}"]`);
     if (!root) {
       return;
+    }
+
+    const canvas = root.querySelector(`[data-paint-canvas="${windowItem.id}"]`);
+    if (canvas && windowItem.data.paintFile && windowItem.data.loadedPaintFileId !== windowItem.data.paintFile.id) {
+      renderPaintFile(canvas, windowItem.data.paintFile);
+      windowItem.data.loadedPaintFileId = windowItem.data.paintFile.id;
     }
 
     const activeMenu = windowItem.data.activeMenu;
@@ -390,7 +434,7 @@ export const paintApp = {
 
     const status = root.querySelector(".paint-app__status");
     if (status) {
-      status.textContent = `Tool: ${windowItem.data.tool} | Color: ${windowItem.data.color} | Size: ${windowItem.data.brushSize}px`;
+      status.textContent = `${windowItem.data.fileName} | Tool: ${windowItem.data.tool} | Color: ${windowItem.data.color} | Size: ${windowItem.data.brushSize}px`;
     }
 
     const dialogLayer = root.querySelector("[data-paint-about]");

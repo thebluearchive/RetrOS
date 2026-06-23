@@ -11,11 +11,11 @@ const COMPUTER_ITEMS = [
   {
     id: "documents",
     title: "My Documents",
-    subtitle: "Notes, writing, and case studies",
+    subtitle: "Notes, doodles, and bitmap files",
     icon: "./res/png/directory_open_file_mydocs_small-0.png",
     appId: "documents",
     kind: "Folder",
-    size: "12 items",
+    size: "5 items",
   },
   {
     id: "notepad",

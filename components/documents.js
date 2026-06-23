@@ -1,66 +1,106 @@
 const DOCUMENT_ITEMS = [
   {
-    id: "resume",
-    title: "Resume.txt",
+    id: "moon-note",
+    title: "moon-note.txt",
     type: "Text Document",
-    size: "18 KB",
-    modified: "06/12/26",
+    size: "2 KB",
+    modified: "06/22/26",
     icon: "./res/png/notepad_file-0.png",
-    description: "A concise career snapshot formatted for quick review.",
+    description: "A small note found beside the taskbar clock.",
+    content:
+      "Moon Note\n\nPlease remember to wind the desktop at midnight.\n\nIf the stars begin blinking in Morse code, do not panic. That usually means the screensaver is dreaming.\n\n- The Night Shift",
     preview:
-      "Summary\nProduct-minded software engineer building practical web interfaces, reliable tools, and thoughtful systems.\n\nHighlights\n- Frontend application architecture\n- Interactive UI systems\n- Clear technical communication",
+      "Moon Note\n\nPlease remember to wind the desktop at midnight.\n\nIf the stars begin blinking in Morse code, do not panic...",
     actionLabel: "Open in Notepad",
     appId: "notepad",
   },
   {
-    id: "case-studies",
-    title: "Case Studies",
-    type: "File Folder",
-    size: "4 items",
-    modified: "06/10/26",
-    icon: "./res/png/directory_open_cool-0.png",
-    description: "Selected project writeups, implementation notes, and outcomes.",
+    id: "sandwich-memo",
+    title: "sandwich-memo.txt",
+    type: "Text Document",
+    size: "1 KB",
+    modified: "06/21/26",
+    icon: "./res/png/write_file-0.png",
+    description: "A memo with strong opinions about lunch architecture.",
+    content:
+      "Sandwich Memo\n\nA sandwich is a protocol, not a format.\n\nApproved fillings:\n- Tomato\n- Sharp cheddar\n- One heroic pickle\n\nRejected fillings:\n- Printer toner\n- Loose pixels\n\nPlease file all crumbs under C:\\SNACKS.",
     preview:
-      "Case Studies contains deeper notes on product decisions, engineering tradeoffs, interface details, and delivery context.",
-    actionLabel: "Open Projects",
-    appId: "projects",
+      "Sandwich Memo\n\nA sandwich is a protocol, not a format.\n\nApproved fillings:\n- Tomato\n- Sharp cheddar...",
+    actionLabel: "Open in Notepad",
+    appId: "notepad",
   },
   {
-    id: "project-index",
-    title: "Project Index.htm",
-    type: "HTML Document",
-    size: "32 KB",
-    modified: "06/09/26",
-    icon: "./res/png/html-0.png",
-    description: "A browsable index of featured builds and links.",
+    id: "tiny-castle",
+    title: "tiny-castle.bmp",
+    type: "Bitmap Image",
+    size: "4 KB",
+    modified: "06/20/26",
+    icon: "./res/png/paint_file-0.png",
+    description: "A very small castle with very serious battlements.",
     preview:
-      "Open this document to review featured projects, live links, and implementation notes.",
-    actionLabel: "Open Projects",
-    appId: "projects",
+      "Bitmap image: tiny-castle.bmp\n\nOpen this file in Paint to inspect the tiny castle.",
+    actionLabel: "Open in Paint",
+    appId: "paint",
+    paintFile: {
+      id: "tiny-castle",
+      background: "#7ec0ee",
+      rects: [
+        ["#6bbf59", 0, 164, 320, 36],
+        ["#f7d77a", 120, 86, 80, 78],
+        ["#c9a34d", 112, 78, 24, 24],
+        ["#c9a34d", 148, 70, 24, 32],
+        ["#c9a34d", 184, 78, 24, 24],
+        ["#8b6f35", 150, 126, 20, 38],
+        ["#4a4a4a", 128, 104, 12, 12],
+        ["#4a4a4a", 180, 104, 12, 12],
+        ["#ffffff", 42, 34, 38, 12],
+        ["#ffffff", 236, 48, 46, 12],
+        ["#ffff00", 270, 22, 28, 28],
+      ],
+    },
   },
   {
-    id: "about",
-    title: "About This Desktop",
-    type: "File Folder",
-    size: "1 item",
-    modified: "06/04/26",
-    icon: "./res/png/help_book_cool-0.png",
-    description: "Project notes and the main GitHub profile link.",
+    id: "desktop-fish",
+    title: "desktop-fish.bmp",
+    type: "Bitmap Image",
+    size: "3 KB",
+    modified: "06/19/26",
+    icon: "./res/png/paint_file-0.png",
+    description: "A fish that appears to be swimming through the desktop.",
     preview:
-      "Use this folder to learn what this desktop is and find The Blue Archive on GitHub.",
-    actionLabel: "Open About",
-    appId: "about",
+      "Bitmap image: desktop-fish.bmp\n\nOpen this file in Paint to view the desktop fish.",
+    actionLabel: "Open in Paint",
+    appId: "paint",
+    paintFile: {
+      id: "desktop-fish",
+      background: "#008080",
+      rects: [
+        ["#00ffff", 64, 82, 148, 56],
+        ["#00a0a0", 92, 138, 82, 18],
+        ["#ff8c00", 212, 96, 44, 28],
+        ["#ff8c00", 212, 118, 44, 28],
+        ["#ffffff", 88, 94, 18, 18],
+        ["#000000", 96, 100, 8, 8],
+        ["#004f4f", 126, 90, 12, 42],
+        ["#004f4f", 154, 90, 12, 42],
+        ["#004f4f", 182, 94, 10, 34],
+        ["#ffffff", 36, 42, 28, 12],
+        ["#ffffff", 248, 56, 34, 12],
+      ],
+    },
   },
   {
     id: "readme",
-    title: "README.txt",
+    title: "read-me-first.txt",
     type: "Text Document",
-    size: "6 KB",
-    modified: "06/01/26",
-    icon: "./res/png/write_file-0.png",
-    description: "Short orientation notes for the desktop.",
+    size: "1 KB",
+    modified: "06/18/26",
+    icon: "./res/png/notepad_file-0.png",
+    description: "An oddly polite note from the Documents folder.",
+    content:
+      "Hello!\n\nThese are not important business documents.\n\nThey are tiny souvenirs from a pretend computer: notes, doodles, and fragments of a desktop that has been left on for too long.\n\nDouble-click a .txt file for Notepad.\nDouble-click a .bmp file for Paint.",
     preview:
-      "Welcome to the Documents folder.\n\nDouble-click items to open their related app. Use Details for metadata and Preview for the document contents.",
+      "Hello!\n\nThese are not important business documents.\n\nThey are tiny souvenirs from a pretend computer...",
     actionLabel: "Open in Notepad",
     appId: "notepad",
   },
@@ -122,7 +162,11 @@ function openSelectedDocument(windowItem, windowManager) {
     return false;
   }
 
-  windowManager.openWindow(selectedItem.appId);
+  windowManager.openWindow(selectedItem.appId, {
+    fileName: selectedItem.title,
+    content: selectedItem.content,
+    paintFile: selectedItem.paintFile,
+  });
   return true;
 }
 
@@ -260,7 +304,7 @@ export const documentsApp = {
 
       windowItem.data.selectedItemId = itemButton.dataset.documentsItem;
       windowManager.syncAppWindow(windowItem.id);
-      return true;
+      return openSelectedDocument(windowItem, windowManager);
     }
 
     if (type === "dblclick") {

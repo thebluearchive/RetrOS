@@ -337,6 +337,18 @@ export const notepadApp = {
       isAboutOpen: false,
     };
   },
+  applyOpenOptions(windowItem, options) {
+    if (typeof options.fileName === "string" && options.fileName.trim()) {
+      windowItem.data.fileName = options.fileName.trim();
+    }
+
+    if (typeof options.content === "string") {
+      windowItem.data.content = options.content;
+    }
+
+    windowItem.data.activeMenu = null;
+    windowItem.data.isAboutOpen = false;
+  },
   render(windowItem) {
     const { activeMenu, content, fileName, isAboutOpen } = windowItem.data;
 
