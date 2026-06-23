@@ -3,8 +3,8 @@ export const aboutApp = {
   title: "About",
   icon: "./res/png/help_book_cool-0.png",
   defaultSize: {
-    width: 504,
-    height: 318,
+    width: 640,
+    height: 420,
   },
   minSize: {
     width: 336,

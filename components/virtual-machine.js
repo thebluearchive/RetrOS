@@ -14,8 +14,8 @@ export const virtualMachineApp = {
   title: "Virtual Machine",
   icon: "./res/png/computer_2-0.png",
   defaultSize: {
-    width: 720,
-    height: 520,
+    width: 900,
+    height: 720,
   },
   minSize: {
     width: 480,
