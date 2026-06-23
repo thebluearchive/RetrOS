@@ -966,7 +966,10 @@ desktopContextMenuElement.addEventListener("click", (event) => {
   }
 
   if (contextAction === "delete-item" && contextItemId) {
-    system.deleteDesktopItems([contextItemId]);
+    const selectedItemIds = getSelectedDesktopItemIds();
+    system.deleteDesktopItems(
+      selectedItemIds.includes(contextItemId) ? selectedItemIds : [contextItemId]
+    );
   }
 
   if (contextAction === "empty-recycle-bin") {

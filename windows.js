@@ -347,8 +347,12 @@ export class WindowManager {
     this.dispatchAppEvent("mouseover", event);
   }
 
-  handleWindowLayerDoubleClick(event) {
+  async handleWindowLayerDoubleClick(event) {
     if (event.target.closest("[data-action]")) {
+      return;
+    }
+
+    if (!event.target.closest("[data-drag-handle]") && await this.dispatchAppEvent("dblclick", event)) {
       return;
     }
 

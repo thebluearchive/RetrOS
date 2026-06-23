@@ -476,6 +476,238 @@ iframe {
   padding-left: 22px;
 }
 
+.my-computer-app {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  height: 100%;
+}
+
+.my-computer-app__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 2px 0;
+}
+
+.my-computer-app__toolbar-button {
+  min-width: 112px;
+  height: 30px;
+  padding: 0 9px;
+  font-weight: 400;
+}
+
+.my-computer-app__toolbar-icon,
+.my-computer-app__item-icon,
+.my-computer-app__dialog-icon {
+  image-rendering: pixelated;
+}
+
+.my-computer-app__address {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 7px;
+}
+
+.my-computer-app__address-label {
+  font-weight: 700;
+}
+
+.my-computer-app__address-value {
+  min-width: 0;
+  height: 28px;
+  padding: 4px 7px;
+  overflow: hidden;
+  border: 2px solid;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: #ffffff;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.my-computer-app__header,
+.my-computer-app__item {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 126px 84px;
+  align-items: center;
+  gap: 10px;
+}
+
+.my-computer-app__header {
+  padding: 4px 10px;
+  border: 2px solid;
+  border-top-color: var(--surface-light);
+  border-left-color: var(--surface-light);
+  border-right-color: var(--surface-shadow);
+  border-bottom-color: var(--surface-shadow);
+  background: var(--surface-mid);
+  font-weight: 700;
+}
+
+.my-computer-app__items {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 2px solid;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: #ffffff;
+}
+
+.my-computer-app__item {
+  width: 100%;
+  min-height: 54px;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  color: #000000;
+  font: inherit;
+  text-align: left;
+  cursor: var(--cursor-pointer);
+}
+
+.my-computer-app__item:hover,
+.my-computer-app__item:focus-visible {
+  background: #dfe8ff;
+  outline: none;
+}
+
+.my-computer-app__item--selected,
+.my-computer-app__item[aria-pressed="true"] {
+  background: var(--active-blue);
+  color: #ffffff;
+}
+
+.my-computer-app__item-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.my-computer-app__item-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.my-computer-app__item-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+}
+
+.my-computer-app__item-title,
+.my-computer-app__item-subtitle,
+.my-computer-app__item-kind,
+.my-computer-app__item-size {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.my-computer-app__item-title {
+  font-weight: 700;
+}
+
+.my-computer-app__item-subtitle {
+  opacity: 0.8;
+}
+
+.my-computer-app__status {
+  min-height: 27px;
+  padding: 4px 8px;
+  border: 2px solid;
+  border-top-color: var(--surface-dark);
+  border-left-color: var(--surface-dark);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: var(--surface);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.my-computer-app__dialog-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.my-computer-app__dialog-layer--hidden {
+  display: none;
+}
+
+.my-computer-app__dialog {
+  width: min(100%, 380px);
+  padding: 18px 16px 14px;
+  background: var(--surface);
+}
+
+.my-computer-app__dialog-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.my-computer-app__dialog-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+}
+
+.my-computer-app__dialog-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.my-computer-app__dialog-title {
+  margin: 0 0 12px;
+  font-size: 17px;
+}
+
+.my-computer-app__properties-list {
+  margin: 0;
+}
+
+.my-computer-app__property-row {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.my-computer-app__property-row dt {
+  font-weight: 700;
+}
+
+.my-computer-app__property-row dd {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.my-computer-app__dialog-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+
 .shutdown-app {
   display: flex;
   flex-direction: column;
