@@ -313,8 +313,8 @@ export class WindowManager {
     this.taskbarApps.innerHTML = buttonsMarkup;
   }
 
-  handleWindowLayerClick(event) {
-    if (this.dispatchAppEvent("click", event)) {
+  async handleWindowLayerClick(event) {
+    if (await this.dispatchAppEvent("click", event)) {
       return;
     }
 
@@ -331,7 +331,7 @@ export class WindowManager {
         this.toggleMaximizeWindow(windowId);
       }
       if (action === "restore") {
-        this.restoreWindow(windowId);
+        this.toggleMaximizeWindow(windowId);
       }
       return;
     }
@@ -361,20 +361,20 @@ export class WindowManager {
     this.toggleMaximizeWindow(windowElement.dataset.windowId);
   }
 
-  handleWindowLayerSubmit(event) {
-    this.dispatchAppEvent("submit", event);
+  async handleWindowLayerSubmit(event) {
+    await this.dispatchAppEvent("submit", event);
   }
 
-  handleWindowLayerInput(event) {
-    this.dispatchAppEvent("input", event);
+  async handleWindowLayerInput(event) {
+    await this.dispatchAppEvent("input", event);
   }
 
-  handleWindowLayerChange(event) {
-    this.dispatchAppEvent("change", event);
+  async handleWindowLayerChange(event) {
+    await this.dispatchAppEvent("change", event);
   }
 
-  handleWindowLayerKeyDown(event) {
-    this.dispatchAppEvent("keydown", event);
+  async handleWindowLayerKeyDown(event) {
+    await this.dispatchAppEvent("keydown", event);
   }
 
   handleTaskbarClick(event) {
@@ -565,9 +565,15 @@ export class WindowManager {
           <span></span>
         </div>
         <div class="window__controls">
-          <button class="window__control win95-button" type="button" data-action="minimize" data-window-id="${windowItem.id}" aria-label="Minimize">_</button>
-          <button class="window__control win95-button" type="button" data-action="maximize" data-window-id="${windowItem.id}" aria-label="Maximize">□</button>
-          <button class="window__control win95-button" type="button" data-action="close" data-window-id="${windowItem.id}" aria-label="Close">X</button>
+          <button class="window__control win95-button" type="button" data-action="minimize" data-window-id="${windowItem.id}" aria-label="Minimize">
+            <span class="window__control-glyph window__control-glyph--minimize" aria-hidden="true"></span>
+          </button>
+          <button class="window__control win95-button" type="button" data-action="maximize" data-window-id="${windowItem.id}" aria-label="Maximize">
+            <span class="window__control-glyph window__control-glyph--maximize" aria-hidden="true"></span>
+          </button>
+          <button class="window__control win95-button" type="button" data-action="close" data-window-id="${windowItem.id}" aria-label="Close">
+            <span class="window__control-glyph window__control-glyph--close" aria-hidden="true"></span>
+          </button>
         </div>
       </header>
       <div class="window__body"></div>
@@ -587,6 +593,7 @@ export class WindowManager {
     const icon = element.querySelector(".window__icon");
     const titleText = element.querySelector(".window__title span");
     const maximizeButton = element.querySelector('[data-action="maximize"], [data-action="restore"]');
+    const maximizeGlyph = maximizeButton?.querySelector(".window__control-glyph");
 
     element.className = `window ${activeClass}`;
     element.style.left = `${windowItem.x}px`;
@@ -602,7 +609,14 @@ export class WindowManager {
     if (maximizeButton) {
       maximizeButton.dataset.action = windowItem.isMaximized ? "restore" : "maximize";
       maximizeButton.setAttribute("aria-label", windowItem.isMaximized ? "Restore" : "Maximize");
-      maximizeButton.textContent = windowItem.isMaximized ? "❐" : "□";
+    }
+
+    if (maximizeGlyph) {
+      maximizeGlyph.className = `window__control-glyph ${
+        windowItem.isMaximized
+          ? "window__control-glyph--restore"
+          : "window__control-glyph--maximize"
+      }`;
     }
 
     this.syncResizeHandles(element, windowItem);
@@ -677,7 +691,7 @@ export class WindowManager {
     }
   }
 
-  dispatchAppEvent(type, event) {
+  async dispatchAppEvent(type, event) {
     const windowElement = event.target.closest("[data-window-id]");
     if (!windowElement) {
       return false;
@@ -693,7 +707,7 @@ export class WindowManager {
       return false;
     }
 
-    return app.handleEvent({
+    return await app.handleEvent({
       type,
       event,
       windowItem,
