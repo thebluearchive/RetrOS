@@ -68,6 +68,13 @@ const initialDesktopItems = [
     icon: "./res/png/msie1-0.png",
     order: 4,
   },
+  {
+    id: "virtual-machine",
+    appId: "virtual-machine",
+    title: "Virtual Machine",
+    icon: "./res/png/computer_2-0.png",
+    order: 5,
+  },
 ];
 
 const system = {

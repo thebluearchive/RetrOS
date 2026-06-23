@@ -6,6 +6,7 @@ import { notepadApp } from "./components/notepad.js";
 import { portfolioApp } from "./components/portfolio.js";
 import { recycleBinApp } from "./components/recycle-bin.js";
 import { shutdownApp } from "./components/shutdown.js";
+import { virtualMachineApp } from "./components/virtual-machine.js";
 
 export const apps = {
   [notepadApp.id]: notepadApp,
@@ -15,5 +16,6 @@ export const apps = {
   [portfolioApp.id]: portfolioApp,
   [contactApp.id]: contactApp,
   [recycleBinApp.id]: recycleBinApp,
+  [virtualMachineApp.id]: virtualMachineApp,
   [shutdownApp.id]: shutdownApp,
 };

@@ -36,6 +36,15 @@ const COMPUTER_ITEMS = [
     size: "1.7 MB",
   },
   {
+    id: "virtual-machine",
+    title: "Virtual Machine",
+    subtitle: "Run another desktop session",
+    icon: "./res/png/computer_2-0.png",
+    appId: "virtual-machine",
+    kind: "Application",
+    size: "4.0 MB",
+  },
+  {
     id: "contact",
     title: "Contact",
     subtitle: "Email and links",
