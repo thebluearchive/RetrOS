@@ -239,6 +239,10 @@ iframe {
   padding: 7px 5px;
 }
 
+.start-menu__submenu-root {
+  position: relative;
+}
+
 .start-menu__item {
   display: flex;
   align-items: center;
@@ -259,6 +263,54 @@ iframe {
   background: var(--active-blue);
   color: var(--surface-light);
   outline: none;
+}
+
+.start-menu__item--has-submenu {
+  position: relative;
+  padding-right: 26px;
+}
+
+.start-menu__submenu-root:hover > .start-menu__item,
+.start-menu__submenu-root:focus-within > .start-menu__item,
+.start-menu__submenu-root--open > .start-menu__item {
+  background: var(--active-blue);
+  color: var(--surface-light);
+}
+
+.start-menu__submenu-arrow {
+  position: absolute;
+  right: 10px;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid currentColor;
+}
+
+.start-menu__flyout {
+  position: absolute;
+  left: calc(100% - 1px);
+  top: 0;
+  z-index: 31;
+  display: none;
+  min-width: 244px;
+  padding: 4px;
+  background: var(--surface);
+  border-top: 2px solid var(--surface-light);
+  border-left: 2px solid var(--surface-light);
+  border-right: 2px solid var(--surface-shadow);
+  border-bottom: 2px solid var(--surface-shadow);
+  box-shadow: inset -1px -1px 0 var(--surface-dark), inset 1px 1px 0 var(--surface-mid);
+}
+
+.start-menu__submenu-root:hover > .start-menu__flyout,
+.start-menu__submenu-root:focus-within > .start-menu__flyout,
+.start-menu__submenu-root--open > .start-menu__flyout {
+  display: block;
+}
+
+.start-menu__flyout-item {
+  min-height: 42px;
 }
 
 .start-menu__divider {
@@ -925,6 +977,131 @@ iframe {
 }
 
 .documents-app__status {
+  min-height: 27px;
+  padding: 4px 8px;
+  border: 2px solid;
+  border-top-color: var(--surface-dark);
+  border-left-color: var(--surface-dark);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: var(--surface);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.projects-app {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  height: 100%;
+}
+
+.projects-app__address {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+
+.projects-app__address-label {
+  font-weight: 700;
+}
+
+.projects-app__address-value {
+  min-width: 0;
+  height: 28px;
+  padding: 4px 7px;
+  overflow: hidden;
+  border: 2px solid;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: #ffffff;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.projects-app__list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 2px solid;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: #ffffff;
+}
+
+.projects-app__item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  min-height: 82px;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  color: #000000;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: var(--cursor-pointer);
+}
+
+.projects-app__item:hover,
+.projects-app__item:focus-visible {
+  background: var(--active-blue);
+  color: #ffffff;
+  outline: none;
+}
+
+.projects-app__icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  image-rendering: pixelated;
+}
+
+.projects-app__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.projects-app__title {
+  font-weight: 700;
+}
+
+.projects-app__description,
+.projects-app__url,
+.projects-app__source {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.projects-app__url {
+  color: #000080;
+  text-decoration: underline;
+}
+
+.projects-app__source {
+  color: #555555;
+}
+
+.projects-app__item:hover .projects-app__url,
+.projects-app__item:focus-visible .projects-app__url,
+.projects-app__item:hover .projects-app__source,
+.projects-app__item:focus-visible .projects-app__source {
+  color: #ffffff;
+}
+
+.projects-app__status {
   min-height: 27px;
   padding: 4px 8px;
   border: 2px solid;
@@ -1696,6 +1873,13 @@ body.is-shutting-down * {
     left: 2px;
     bottom: calc(var(--taskbar-height) - 2px);
     width: calc(100vw - 4px);
+  }
+
+  .start-menu__flyout {
+    left: 42px;
+    top: 42px;
+    width: calc(100vw - 56px);
+    min-width: 0;
   }
 
   .taskbar {

@@ -280,6 +280,10 @@ function setStartMenuState(isOpen) {
   startMenu.classList.toggle("start-menu--hidden", !isOpen);
   startMenu.setAttribute("aria-hidden", String(!isOpen));
   startButton.setAttribute("aria-expanded", String(isOpen));
+
+  if (!isOpen) {
+    closeStartSubmenus();
+  }
 }
 
 function toggleStartMenu() {
@@ -289,6 +293,27 @@ function toggleStartMenu() {
 
 function closeStartMenu() {
   setStartMenuState(false);
+}
+
+function closeStartSubmenus() {
+  startMenu.querySelectorAll("[data-start-submenu]").forEach((submenu) => {
+    submenu.classList.remove("start-menu__submenu-root--open");
+  });
+
+  startMenu.querySelectorAll("[data-start-submenu-toggle]").forEach((toggle) => {
+    toggle.setAttribute("aria-expanded", "false");
+  });
+}
+
+function toggleStartSubmenu(submenuName) {
+  const submenu = startMenu.querySelector(`[data-start-submenu="${submenuName}"]`);
+  const toggle = startMenu.querySelector(`[data-start-submenu-toggle="${submenuName}"]`);
+  if (!submenu || !toggle) {
+    return;
+  }
+
+  const isOpen = submenu.classList.toggle("start-menu__submenu-root--open");
+  toggle.setAttribute("aria-expanded", String(isOpen));
 }
 
 function setDesktopContextMenuState(isOpen, x = 0, y = 0) {
@@ -641,6 +666,12 @@ startButton.addEventListener("click", (event) => {
 
 startMenu.addEventListener("click", (event) => {
   event.stopPropagation();
+
+  const submenuToggle = event.target.closest("[data-start-submenu-toggle]");
+  if (submenuToggle) {
+    toggleStartSubmenu(submenuToggle.dataset.startSubmenuToggle);
+    return;
+  }
 
   const menuItem = event.target.closest("[data-app-id]");
   if (!menuItem) {

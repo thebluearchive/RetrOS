@@ -22,8 +22,8 @@ const DOCUMENT_ITEMS = [
     description: "Selected project writeups, implementation notes, and outcomes.",
     preview:
       "Case Studies contains deeper notes on product decisions, engineering tradeoffs, interface details, and delivery context.",
-    actionLabel: "Open Portfolio",
-    appId: "portfolio",
+    actionLabel: "Open Projects",
+    appId: "projects",
   },
   {
     id: "project-index",
@@ -34,9 +34,9 @@ const DOCUMENT_ITEMS = [
     icon: "./res/png/html-0.png",
     description: "A browsable index of featured builds and links.",
     preview:
-      "Open this document to review featured projects, live links, and implementation notes in the portfolio browser.",
-    actionLabel: "Open Portfolio",
-    appId: "portfolio",
+      "Open this document to review featured projects, live links, and implementation notes.",
+    actionLabel: "Open Projects",
+    appId: "projects",
   },
   {
     id: "contact-sheet",

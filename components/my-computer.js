@@ -1,10 +1,10 @@
 const COMPUTER_ITEMS = [
   {
     id: "drive-c",
-    title: "Local Disk (C:)",
-    subtitle: "Portfolio system files",
+    title: "Projects",
+    subtitle: "Featured project files",
     icon: "./res/png/hard_disk_drive-0.png",
-    appId: "portfolio",
+    appId: "projects",
     kind: "Hard Disk",
     size: "95.0 MB",
   },

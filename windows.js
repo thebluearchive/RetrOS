@@ -32,20 +32,23 @@ export class WindowManager {
     return Boolean(this.apps[appId]);
   }
 
-  openWindow(appId) {
+  openWindow(appId, options = {}) {
     const app = this.apps[appId];
 
     if (!app) {
-      return;
+      return null;
     }
 
     const existingWindow = this.state.windows.find((windowItem) => windowItem.appId === appId);
 
     if (existingWindow) {
+      if (typeof app.applyOpenOptions === "function") {
+        app.applyOpenOptions(existingWindow, options, this, this.system);
+      }
       existingWindow.isMinimized = false;
       this.focusWindow(existingWindow.id);
       this.render();
-      return;
+      return existingWindow;
     }
 
     const windowId = `window-${this.state.nextWindowId}`;
@@ -70,11 +73,16 @@ export class WindowManager {
       zIndex: this.consumeZIndex(),
     };
 
+    if (typeof app.applyOpenOptions === "function") {
+      app.applyOpenOptions(windowItem, options, this, this.system);
+    }
+
     this.state.windows.forEach((item) => {
       item.isActive = false;
     });
     this.state.windows.push(windowItem);
     this.render();
+    return windowItem;
   }
 
   closeWindow(windowId) {

@@ -33,6 +33,19 @@ export const browserApp = {
       forwardStack: [],
     };
   },
+  applyOpenOptions(windowItem, options, windowManager) {
+    const nextUrl = windowManager.normalizeUrl(options.url);
+    if (!nextUrl || windowItem.data.url === nextUrl) {
+      return;
+    }
+
+    if (!options.replace) {
+      windowItem.data.backStack.push(windowItem.data.url);
+    }
+
+    windowItem.data.forwardStack = [];
+    windowItem.data.url = nextUrl;
+  },
   render(windowItem) {
     const url = windowItem.data.url;
     const canGoBack = windowItem.data.backStack.length > 0;
