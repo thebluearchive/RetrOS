@@ -13,13 +13,23 @@ const shutdownScreenElement = document.getElementById("shutdown-screen");
 const shutdownSequenceDuration = 2000;
 const recycleBinEmptyIcon = "./res/png/recycle_bin_empty-0.png";
 const recycleBinFullIcon = "./res/png/recycle_bin_full-0.png";
+const desktopGrid = {
+  startX: 12,
+  startY: 14,
+  stepX: 108,
+  stepY: 98,
+  iconWidth: 100,
+  iconHeight: 86,
+};
 let shutdownTimeoutIds = [];
 const desktopSelectionElement = document.createElement("div");
 let desktopSelectionState = null;
+let desktopDragState = null;
 let desktopContextMenuState = {
   type: "desktop",
   itemId: null,
 };
+let suppressDesktopIconClick = false;
 
 const initialDesktopItems = [
   {
@@ -63,11 +73,107 @@ const initialDesktopItems = [
 const system = {
   desktopItems: initialDesktopItems.map((item) => ({ ...item })),
   recycleBinItems: [],
+  initializeDesktopItems() {
+    this.desktopItems = this.desktopItems.map((item) => {
+      if (Number.isInteger(item.gridColumn) && Number.isInteger(item.gridRow)) {
+        return item;
+      }
+
+      return {
+        ...item,
+        ...getDefaultDesktopSlot(item.order),
+      };
+    });
+  },
   getRecycleBinIcon() {
     return this.recycleBinItems.length > 0 ? recycleBinFullIcon : recycleBinEmptyIcon;
   },
   getDesktopItem(itemId) {
     return this.desktopItems.find((item) => item.id === itemId) ?? null;
+  },
+  getDesktopItemBySlot(gridColumn, gridRow, excludedItemId = null) {
+    return (
+      this.desktopItems.find((item) => {
+        return (
+          item.id !== excludedItemId &&
+          item.gridColumn === gridColumn &&
+          item.gridRow === gridRow
+        );
+      }) ?? null
+    );
+  },
+  moveDesktopItem(itemId, targetSlot) {
+    return this.moveDesktopItems([itemId], itemId, targetSlot);
+  },
+  moveDesktopItems(itemIds, primaryItemId, targetSlot) {
+    const ids = new Set(itemIds);
+    const primaryItem = this.getDesktopItem(primaryItemId);
+    if (!primaryItem) {
+      return false;
+    }
+
+    const nextSlot = getNearestDesktopSlot(targetSlot.left, targetSlot.top);
+    const deltaColumn = nextSlot.gridColumn - primaryItem.gridColumn;
+    const deltaRow = nextSlot.gridRow - primaryItem.gridRow;
+    const nextSlots = this.desktopItems
+      .filter((item) => ids.has(item.id))
+      .map((item) => {
+        return {
+          item,
+          gridColumn: item.gridColumn + deltaColumn,
+          gridRow: item.gridRow + deltaRow,
+        };
+      });
+
+    const { columns, rows } = getDesktopGridLimits();
+    const hasInvalidSlot = nextSlots.some(({ gridColumn, gridRow }) => {
+      return gridColumn < 0 || gridColumn >= columns || gridRow < 0 || gridRow >= rows;
+    });
+
+    const hasCollision = nextSlots.some(({ gridColumn, gridRow }) => {
+      const occupiedItem = this.getDesktopItemBySlot(gridColumn, gridRow);
+      return occupiedItem && !ids.has(occupiedItem.id);
+    });
+
+    if (hasInvalidSlot || hasCollision) {
+      renderDesktopIcons();
+      return false;
+    }
+
+    nextSlots.forEach(({ item, gridColumn, gridRow }) => {
+      item.gridColumn = gridColumn;
+      item.gridRow = gridRow;
+    });
+
+    renderDesktopIcons();
+    return true;
+  },
+  getNextAvailableDesktopSlot(preferredSlot = null, excludedItemId = null) {
+    const { columns, rows } = getDesktopGridLimits();
+    const occupiedSlots = new Set(
+      this.desktopItems
+        .filter((item) => item.id !== excludedItemId)
+        .map((item) => `${item.gridColumn}:${item.gridRow}`)
+    );
+
+    if (preferredSlot) {
+      const normalizedPreferredSlot = normalizeDesktopSlot(preferredSlot);
+      const preferredKey = `${normalizedPreferredSlot.gridColumn}:${normalizedPreferredSlot.gridRow}`;
+      if (!occupiedSlots.has(preferredKey)) {
+        return normalizedPreferredSlot;
+      }
+    }
+
+    for (let column = 0; column < columns; column += 1) {
+      for (let row = 0; row < rows; row += 1) {
+        const key = `${column}:${row}`;
+        if (!occupiedSlots.has(key)) {
+          return { gridColumn: column, gridRow: row };
+        }
+      }
+    }
+
+    return preferredSlot ? normalizeDesktopSlot(preferredSlot) : { gridColumn: 0, gridRow: 0 };
   },
   deleteDesktopItems(itemIds) {
     const ids = new Set(itemIds);
@@ -111,6 +217,19 @@ const system = {
       return;
     }
 
+    restoredItems.forEach((item) => {
+      const nextSlot = this.getNextAvailableDesktopSlot(
+        {
+          gridColumn: item.gridColumn,
+          gridRow: item.gridRow,
+        },
+        item.id
+      );
+
+      item.gridColumn = nextSlot.gridColumn;
+      item.gridRow = nextSlot.gridRow;
+    });
+
     this.desktopItems = [...this.desktopItems, ...restoredItems].sort((left, right) => left.order - right.order);
     renderDesktopIcons();
     windowManager.syncWindowsByAppId("recycle-bin");
@@ -137,6 +256,10 @@ const windowManager = new WindowManager({
   taskbarApps: taskbarAppsElement,
   system,
 });
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
 
 function updateClock() {
   const now = new Date();
@@ -188,6 +311,130 @@ function getSelectedDesktopItemIds() {
   return Array.from(desktopIconsElement.querySelectorAll(".desktop-icon--selected"))
     .map((icon) => icon.dataset.desktopItemId)
     .filter(Boolean);
+}
+
+function getDesktopGridLimits() {
+  const width = desktopElement.clientWidth;
+  const height = windowLayerElement.clientHeight;
+  const columns = Math.max(
+    1,
+    Math.floor((width - desktopGrid.startX - desktopGrid.iconWidth) / desktopGrid.stepX) + 1
+  );
+  const rows = Math.max(
+    1,
+    Math.floor((height - desktopGrid.startY - desktopGrid.iconHeight) / desktopGrid.stepY) + 1
+  );
+
+  return {
+    columns,
+    rows,
+  };
+}
+
+function normalizeDesktopSlot(slot) {
+  const { columns, rows } = getDesktopGridLimits();
+
+  return {
+    gridColumn: clamp(slot.gridColumn, 0, columns - 1),
+    gridRow: clamp(slot.gridRow, 0, rows - 1),
+  };
+}
+
+function getDefaultDesktopSlot(order) {
+  const { rows } = getDesktopGridLimits();
+  const safeOrder = Math.max(0, order ?? 0);
+
+  return {
+    gridColumn: Math.floor(safeOrder / rows),
+    gridRow: safeOrder % rows,
+  };
+}
+
+function getDesktopPositionFromSlot(gridColumn, gridRow) {
+  const normalizedSlot = normalizeDesktopSlot({ gridColumn, gridRow });
+
+  return {
+    left: desktopGrid.startX + normalizedSlot.gridColumn * desktopGrid.stepX,
+    top: desktopGrid.startY + normalizedSlot.gridRow * desktopGrid.stepY,
+  };
+}
+
+function getNearestDesktopSlot(left, top) {
+  const column = Math.round((left - desktopGrid.startX) / desktopGrid.stepX);
+  const row = Math.round((top - desktopGrid.startY) / desktopGrid.stepY);
+
+  return normalizeDesktopSlot({
+    gridColumn: column,
+    gridRow: row,
+  });
+}
+
+function getDesktopItemElement(itemId) {
+  return desktopIconsElement.querySelector(`[data-desktop-item-id="${itemId}"]`);
+}
+
+function getDesktopDragItems(primaryItemId) {
+  const selectedItemIds = getSelectedDesktopItemIds();
+  const dragItemIds = selectedItemIds.includes(primaryItemId) ? selectedItemIds : [primaryItemId];
+
+  return dragItemIds
+    .map((itemId) => {
+      const item = system.getDesktopItem(itemId);
+      if (!item) {
+        return null;
+      }
+
+      return {
+        itemId: item.id,
+        ...getDesktopPositionFromSlot(item.gridColumn, item.gridRow),
+      };
+    })
+    .filter(Boolean);
+}
+
+function getDesktopDragBounds(items) {
+  return items.reduce(
+    (bounds, item) => {
+      return {
+        minLeft: Math.min(bounds.minLeft, item.left),
+        minTop: Math.min(bounds.minTop, item.top),
+        maxLeft: Math.max(bounds.maxLeft, item.left),
+        maxTop: Math.max(bounds.maxTop, item.top),
+      };
+    },
+    {
+      minLeft: Infinity,
+      minTop: Infinity,
+      maxLeft: -Infinity,
+      maxTop: -Infinity,
+    }
+  );
+}
+
+function getRecycleBinDropTarget(excludedItemId = null) {
+  const recycleBinItem = system.desktopItems.find((item) => {
+    return item.appId === "recycle-bin" && item.id !== excludedItemId;
+  });
+
+  if (!recycleBinItem) {
+    return null;
+  }
+
+  return getDesktopItemElement(recycleBinItem.id);
+}
+
+function clearRecycleBinDropState() {
+  const recycleBinElement = getRecycleBinDropTarget();
+  recycleBinElement?.classList.remove("desktop-icon--drop-target");
+}
+
+function isPointerOverElement(clientX, clientY, element) {
+  if (!element) {
+    return false;
+  }
+
+  const rect = element.getBoundingClientRect();
+  return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
 }
 
 function deleteSelectedDesktopItems() {
@@ -249,10 +496,21 @@ function renderDesktopIcons() {
   const selectedIds = new Set(getSelectedDesktopItemIds());
 
   desktopIconsElement.innerHTML = system.desktopItems
-    .sort((left, right) => left.order - right.order)
+    .sort((left, right) => {
+      if (left.gridColumn !== right.gridColumn) {
+        return left.gridColumn - right.gridColumn;
+      }
+
+      if (left.gridRow !== right.gridRow) {
+        return left.gridRow - right.gridRow;
+      }
+
+      return left.order - right.order;
+    })
     .map((item) => {
       const isSelected = selectedIds.has(item.id);
       const icon = item.appId === "recycle-bin" ? system.getRecycleBinIcon() : item.icon;
+      const position = getDesktopPositionFromSlot(item.gridColumn, item.gridRow);
 
       return `
         <button
@@ -261,8 +519,10 @@ function renderDesktopIcons() {
           data-desktop-item-id="${item.id}"
           data-app-id="${item.appId}"
           aria-selected="${String(isSelected)}"
+          draggable="false"
+          style="left: ${position.left}px; top: ${position.top}px;"
         >
-          <img class="desktop-icon__image" src="${icon}" alt="" width="32" height="32">
+          <img class="desktop-icon__image" src="${icon}" alt="" width="32" height="32" draggable="false">
           <span class="desktop-icon__label">${item.title}</span>
         </button>
       `;
@@ -388,6 +648,58 @@ startMenu.addEventListener("click", (event) => {
   closeStartMenu();
 });
 
+desktopIconsElement.addEventListener("mousedown", (event) => {
+  if (event.button !== 0) {
+    return;
+  }
+
+  const icon = event.target.closest(".desktop-icon");
+  if (!icon) {
+    return;
+  }
+
+  const item = system.getDesktopItem(icon.dataset.desktopItemId);
+  if (!item) {
+    return;
+  }
+
+  if (!icon.classList.contains("desktop-icon--selected")) {
+    clearDesktopIconSelection();
+    icon.classList.add("desktop-icon--selected");
+    icon.setAttribute("aria-selected", "true");
+  }
+
+  closeStartMenu();
+  closeDesktopContextMenu();
+
+  const position = getDesktopPositionFromSlot(item.gridColumn, item.gridRow);
+  const dragItems = getDesktopDragItems(item.id);
+  const dragBounds = getDesktopDragBounds(dragItems);
+  desktopDragState = {
+    primaryItemId: item.id,
+    itemIds: dragItems.map((dragItem) => dragItem.itemId),
+    items: dragItems,
+    startPointerX: event.clientX,
+    startPointerY: event.clientY,
+    startLeft: position.left,
+    startTop: position.top,
+    minDeltaX: desktopGrid.startX - dragBounds.minLeft,
+    minDeltaY: desktopGrid.startY - dragBounds.minTop,
+    maxDeltaX: desktopGrid.startX + (getDesktopGridLimits().columns - 1) * desktopGrid.stepX - dragBounds.maxLeft,
+    maxDeltaY: desktopGrid.startY + (getDesktopGridLimits().rows - 1) * desktopGrid.stepY - dragBounds.maxTop,
+    didMove: false,
+    isOverRecycleBin: false,
+  };
+
+  event.preventDefault();
+});
+
+desktopIconsElement.addEventListener("dragstart", (event) => {
+  if (event.target.closest(".desktop-icon")) {
+    event.preventDefault();
+  }
+});
+
 desktopElement.addEventListener("mousedown", (event) => {
   if (event.button !== 0) {
     return;
@@ -435,6 +747,12 @@ desktopIconsElement.addEventListener("dblclick", (event) => {
 });
 
 desktopIconsElement.addEventListener("click", (event) => {
+  if (suppressDesktopIconClick) {
+    suppressDesktopIconClick = false;
+    event.preventDefault();
+    return;
+  }
+
   const icon = event.target.closest(".desktop-icon");
   if (!icon) {
     return;
@@ -453,10 +771,14 @@ desktopIconsElement.addEventListener("keydown", (event) => {
 
   if (event.key === "Delete" || event.key === "Backspace") {
     event.preventDefault();
-    clearDesktopIconSelection();
-    icon.classList.add("desktop-icon--selected");
-    icon.setAttribute("aria-selected", "true");
-    system.deleteDesktopItems([icon.dataset.desktopItemId]);
+
+    if (!icon.classList.contains("desktop-icon--selected")) {
+      clearDesktopIconSelection();
+      icon.classList.add("desktop-icon--selected");
+      icon.setAttribute("aria-selected", "true");
+    }
+
+    system.deleteDesktopItems(getSelectedDesktopItemIds());
   }
 });
 
@@ -467,9 +789,13 @@ desktopIconsElement.addEventListener("contextmenu", (event) => {
   }
 
   event.preventDefault();
-  clearDesktopIconSelection();
-  icon.classList.add("desktop-icon--selected");
-  icon.setAttribute("aria-selected", "true");
+
+  if (!icon.classList.contains("desktop-icon--selected")) {
+    clearDesktopIconSelection();
+    icon.classList.add("desktop-icon--selected");
+    icon.setAttribute("aria-selected", "true");
+  }
+
   closeStartMenu();
   desktopContextMenuState = {
     type: "item",
@@ -493,6 +819,45 @@ desktopElement.addEventListener("contextmenu", (event) => {
 });
 
 document.addEventListener("mousemove", (event) => {
+  if (desktopDragState) {
+    const deltaX = event.clientX - desktopDragState.startPointerX;
+    const deltaY = event.clientY - desktopDragState.startPointerY;
+
+    if (!desktopDragState.didMove && Math.hypot(deltaX, deltaY) >= 4) {
+      desktopDragState.didMove = true;
+      desktopDragState.itemIds.forEach((itemId) => {
+        getDesktopItemElement(itemId)?.classList.add("desktop-icon--dragging");
+      });
+    }
+
+    if (!desktopDragState.didMove) {
+      return;
+    }
+
+    const nextDeltaX = clamp(deltaX, desktopDragState.minDeltaX, desktopDragState.maxDeltaX);
+    const nextDeltaY = clamp(deltaY, desktopDragState.minDeltaY, desktopDragState.maxDeltaY);
+
+    desktopDragState.items.forEach((dragItem) => {
+      const icon = getDesktopItemElement(dragItem.itemId);
+      if (!icon) {
+        return;
+      }
+
+      icon.style.left = `${dragItem.left + nextDeltaX}px`;
+      icon.style.top = `${dragItem.top + nextDeltaY}px`;
+    });
+
+    const recycleBinElement = getRecycleBinDropTarget();
+    desktopDragState.isOverRecycleBin =
+      !desktopDragState.itemIds.includes(recycleBinElement?.dataset.desktopItemId) &&
+      isPointerOverElement(event.clientX, event.clientY, recycleBinElement);
+    recycleBinElement?.classList.toggle(
+      "desktop-icon--drop-target",
+      desktopDragState.isOverRecycleBin
+    );
+    return;
+  }
+
   if (!desktopSelectionState) {
     return;
   }
@@ -513,7 +878,41 @@ document.addEventListener("mousemove", (event) => {
   });
 });
 
-document.addEventListener("mouseup", () => {
+document.addEventListener("mouseup", (event) => {
+  if (desktopDragState) {
+    const primaryIcon = getDesktopItemElement(desktopDragState.primaryItemId);
+
+    if (primaryIcon && desktopDragState.didMove) {
+      const recycleBinElement = getRecycleBinDropTarget();
+      const isOverRecycleBin =
+        !desktopDragState.itemIds.includes(recycleBinElement?.dataset.desktopItemId) &&
+        (desktopDragState.isOverRecycleBin ||
+          isPointerOverElement(event.clientX, event.clientY, recycleBinElement));
+
+      if (isOverRecycleBin) {
+        system.deleteDesktopItems(desktopDragState.itemIds);
+      } else {
+        const nextLeft = parseFloat(primaryIcon.style.left) || desktopDragState.startLeft;
+        const nextTop = parseFloat(primaryIcon.style.top) || desktopDragState.startTop;
+        system.moveDesktopItems(desktopDragState.itemIds, desktopDragState.primaryItemId, {
+          left: nextLeft,
+          top: nextTop,
+        });
+      }
+
+      suppressDesktopIconClick = true;
+    }
+
+    clearRecycleBinDropState();
+
+    desktopDragState.itemIds.forEach((itemId) => {
+      getDesktopItemElement(itemId)?.classList.remove("desktop-icon--dragging");
+    });
+
+    desktopDragState = null;
+    return;
+  }
+
   if (!desktopSelectionState) {
     return;
   }
@@ -659,6 +1058,32 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+window.addEventListener("resize", () => {
+  const occupiedSlots = new Set();
+
+  system.desktopItems
+    .sort((left, right) => left.order - right.order)
+    .forEach((item) => {
+      let nextSlot = normalizeDesktopSlot({
+        gridColumn: item.gridColumn,
+        gridRow: item.gridRow,
+      });
+      let slotKey = `${nextSlot.gridColumn}:${nextSlot.gridRow}`;
+
+      if (occupiedSlots.has(slotKey)) {
+        nextSlot = system.getNextAvailableDesktopSlot(nextSlot, item.id);
+        slotKey = `${nextSlot.gridColumn}:${nextSlot.gridRow}`;
+      }
+
+      item.gridColumn = nextSlot.gridColumn;
+      item.gridRow = nextSlot.gridRow;
+      occupiedSlots.add(slotKey);
+  });
+
+  renderDesktopIcons();
+});
+
+system.initializeDesktopItems();
 renderDesktopIcons();
 updateClock();
 setStartMenuState(false);
