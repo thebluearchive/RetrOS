@@ -177,6 +177,7 @@ iframe {
 
 .start-menu {
   position: fixed;
+  z-index: 30;
   bottom: calc(var(--taskbar-height) - 2px);
   left: 4px;
   display: flex;
@@ -663,6 +664,7 @@ iframe {
 
 .taskbar {
   position: fixed;
+  z-index: 25;
   right: 0;
   bottom: 0;
   left: 0;
