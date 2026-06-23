@@ -18,8 +18,11 @@ export class WindowManager {
 
     this.windowLayer.addEventListener("mousedown", this.handleWindowLayerMouseDown.bind(this));
     this.windowLayer.addEventListener("click", this.handleWindowLayerClick.bind(this));
+    this.windowLayer.addEventListener("mouseover", this.handleWindowLayerMouseOver.bind(this));
     this.windowLayer.addEventListener("dblclick", this.handleWindowLayerDoubleClick.bind(this));
     this.windowLayer.addEventListener("input", this.handleWindowLayerInput.bind(this));
+    this.windowLayer.addEventListener("change", this.handleWindowLayerChange.bind(this));
+    this.windowLayer.addEventListener("keydown", this.handleWindowLayerKeyDown.bind(this));
     this.windowLayer.addEventListener("submit", this.handleWindowLayerSubmit.bind(this), true);
     this.taskbarApps.addEventListener("click", this.handleTaskbarClick.bind(this));
   }
@@ -339,6 +342,10 @@ export class WindowManager {
     }
   }
 
+  handleWindowLayerMouseOver(event) {
+    this.dispatchAppEvent("mouseover", event);
+  }
+
   handleWindowLayerDoubleClick(event) {
     if (event.target.closest("[data-action]")) {
       return;
@@ -360,6 +367,14 @@ export class WindowManager {
 
   handleWindowLayerInput(event) {
     this.dispatchAppEvent("input", event);
+  }
+
+  handleWindowLayerChange(event) {
+    this.dispatchAppEvent("change", event);
+  }
+
+  handleWindowLayerKeyDown(event) {
+    this.dispatchAppEvent("keydown", event);
   }
 
   handleTaskbarClick(event) {

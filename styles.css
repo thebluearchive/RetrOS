@@ -330,7 +330,7 @@ iframe {
 .window__body {
   flex: 1;
   margin: 2px;
-  padding: 14px;
+  padding: 8px;
   background: var(--surface);
   border-top: 2px solid var(--surface-dark);
   border-left: 2px solid var(--surface-dark);
@@ -611,6 +611,7 @@ iframe {
 }
 
 .notepad-app {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -619,24 +620,102 @@ iframe {
 .notepad-app__menu {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 1px 2px 5px;
+  gap: 1px;
+  padding: 0 1px 4px;
+  user-select: none;
+}
+
+.notepad-app__menu-slot {
+  position: relative;
 }
 
 .notepad-app__menu-item {
-  min-width: 0;
-  padding: 2px 10px;
+  min-width: 58px;
+  min-height: 23px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 12px 0;
   border: 1px solid transparent;
-  background: transparent;
+  background: var(--surface);
   color: #000000;
   font: inherit;
+  line-height: 1;
   cursor: var(--cursor-pointer);
 }
 
 .notepad-app__menu-item:hover,
 .notepad-app__menu-item:focus-visible {
-  border-color: var(--surface-dark);
+  border-top-color: var(--surface-light);
+  border-left-color: var(--surface-light);
+  border-right-color: var(--surface-shadow);
+  border-bottom-color: var(--surface-shadow);
+  box-shadow: inset -1px -1px 0 var(--surface-dark), inset 1px 1px 0 var(--surface-mid);
   outline: none;
+}
+
+.notepad-app__menu-item[aria-expanded="true"] {
+  padding: 2px 11px 0 13px;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  box-shadow: inset 1px 1px 0 var(--surface-dark), inset -1px -1px 0 var(--surface-mid);
+  outline: none;
+}
+
+.notepad-app__dropdown {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 0;
+  z-index: 5;
+  min-width: 216px;
+  padding: 4px;
+  background: var(--surface);
+  border-top: 2px solid var(--surface-light);
+  border-left: 2px solid var(--surface-light);
+  border-right: 2px solid var(--surface-shadow);
+  border-bottom: 2px solid var(--surface-shadow);
+  box-shadow: inset -1px -1px 0 var(--surface-dark), inset 1px 1px 0 var(--surface-mid);
+}
+
+.notepad-app__dropdown--hidden {
+  display: none;
+}
+
+.notepad-app__dropdown-item {
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 4px 16px 4px 19px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: var(--cursor-pointer);
+}
+
+.notepad-app__dropdown-item:hover,
+.notepad-app__dropdown-item:focus-visible {
+  background: var(--active-blue);
+  color: var(--surface-light);
+  outline: none;
+}
+
+.notepad-app__dropdown-divider {
+  height: 2px;
+  margin: 4px 2px;
+  background: linear-gradient(180deg, var(--surface-dark) 0 50%, var(--surface-light) 50% 100%);
+}
+
+.notepad-app__shortcut {
+  color: inherit;
+  opacity: 0.95;
 }
 
 .notepad-app__editor {
@@ -652,7 +731,7 @@ iframe {
   border-bottom-color: var(--surface-light);
   background: #ffffff;
   color: #000000;
-  font-family: "Pixelated MS Sans Serif", "MS Sans Serif", monospace;
+  font-family: "Courier New", Courier, monospace;
   font-size: 17px;
   line-height: 1.25;
   white-space: pre-wrap;
@@ -660,6 +739,68 @@ iframe {
 
 .notepad-app__editor:focus {
   outline: none;
+}
+
+.notepad-app__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.notepad-app__dialog-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.notepad-app__dialog-layer--hidden {
+  display: none;
+}
+
+.notepad-app__dialog {
+  width: min(100%, 360px);
+  padding: 18px 16px 14px;
+  background: var(--surface);
+}
+
+.notepad-app__dialog-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.notepad-app__dialog-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  image-rendering: pixelated;
+}
+
+.notepad-app__dialog-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.notepad-app__dialog-title {
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+
+.notepad-app__dialog-text {
+  margin: 0 0 8px;
+}
+
+.notepad-app__dialog-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
 }
 
 .taskbar {
