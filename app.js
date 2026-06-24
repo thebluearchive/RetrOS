@@ -12,6 +12,7 @@ const desktopContextMenuElement = document.getElementById("desktop-context-menu"
 const shutdownScreenElement = document.getElementById("shutdown-screen");
 const shutdownSequenceDuration = 2000;
 const desktopBackgroundStorageKey = "win95-desktop-background";
+const desktopFilesStorageKey = "win95-desktop-files";
 const recycleBinEmptyIcon = "./res/png/recycle_bin_empty-0.png";
 const recycleBinFullIcon = "./res/png/recycle_bin_full-0.png";
 const desktopGrid = {
@@ -93,6 +94,15 @@ const system = {
   recycleBinItems: [],
   desktopBackground: loadDesktopBackground(),
   nextDesktopFileId: 1,
+  loadDesktopFiles() {
+    const state = loadDesktopFilesState();
+    this.desktopItems = [
+      ...initialDesktopItems.map((item) => ({ ...item })),
+      ...state.desktopItems,
+    ];
+    this.recycleBinItems = state.recycleBinItems;
+    this.nextDesktopFileId = state.nextDesktopFileId;
+  },
   initializeDesktopItems() {
     this.desktopItems = this.desktopItems.map((item) => {
       if (Number.isInteger(item.gridColumn) && Number.isInteger(item.gridRow)) {
@@ -165,6 +175,7 @@ const system = {
       item.gridRow = gridRow;
     });
 
+    saveDesktopFilesState();
     renderDesktopIcons();
     return true;
   },
@@ -216,6 +227,7 @@ const system = {
     }
 
     this.recycleBinItems = [...removedItems, ...this.recycleBinItems];
+    saveDesktopFilesState();
     renderDesktopIcons();
     windowManager.syncWindowsByAppId("recycle-bin");
   },
@@ -251,6 +263,7 @@ const system = {
     });
 
     this.desktopItems = [...this.desktopItems, ...restoredItems].sort((left, right) => left.order - right.order);
+    saveDesktopFilesState();
     renderDesktopIcons();
     windowManager.syncWindowsByAppId("recycle-bin");
   },
@@ -260,6 +273,7 @@ const system = {
     }
 
     this.recycleBinItems = [];
+    saveDesktopFilesState();
     renderDesktopIcons();
     windowManager.syncWindowsByAppId("recycle-bin");
   },
@@ -289,6 +303,7 @@ const system = {
     this.nextDesktopFileId += 1;
     this.desktopItems.push(item);
     renamingDesktopItemId = item.id;
+    saveDesktopFilesState();
     renderDesktopIcons();
     return item;
   },
@@ -357,6 +372,102 @@ function saveDesktopBackground(background) {
     window.localStorage.setItem(desktopBackgroundStorageKey, JSON.stringify(background));
   } catch {
     // Large uploaded images may exceed localStorage. The background still applies for this session.
+  }
+}
+
+function isUserDesktopFile(item) {
+  return typeof item?.id === "string" && item.id.startsWith("desktop-file-");
+}
+
+function serializeDesktopFile(item) {
+  return {
+    id: item.id,
+    appId: item.appId,
+    title: item.title,
+    icon: item.icon,
+    order: item.order,
+    fileType: item.fileType,
+    content: item.content ?? "",
+    paintFile: item.paintFile ?? null,
+    gridColumn: item.gridColumn,
+    gridRow: item.gridRow,
+    deletedAt: item.deletedAt ?? null,
+  };
+}
+
+function normalizeDesktopFile(rawItem) {
+  if (!isUserDesktopFile(rawItem)) {
+    return null;
+  }
+
+  const fileDefinition = getDesktopFileDefinition(rawItem.fileType);
+  if (!fileDefinition) {
+    return null;
+  }
+
+  return {
+    id: rawItem.id,
+    appId: fileDefinition.appId,
+    title: String(rawItem.title ?? "").trim() || "Untitled",
+    icon: fileDefinition.icon,
+    order: Number.isInteger(rawItem.order) ? rawItem.order : initialDesktopItems.length,
+    fileType: rawItem.fileType,
+    content: typeof rawItem.content === "string" ? rawItem.content : fileDefinition.content,
+    paintFile: rawItem.paintFile ?? fileDefinition.paintFile,
+    gridColumn: Number.isInteger(rawItem.gridColumn) ? rawItem.gridColumn : null,
+    gridRow: Number.isInteger(rawItem.gridRow) ? rawItem.gridRow : null,
+    deletedAt: Number.isFinite(rawItem.deletedAt) ? rawItem.deletedAt : undefined,
+  };
+}
+
+function getDesktopFileNumericId(item) {
+  const match = /^desktop-file-(\d+)$/.exec(item.id);
+  return match ? Number.parseInt(match[1], 10) : 0;
+}
+
+function loadDesktopFilesState() {
+  try {
+    const rawState = window.localStorage.getItem(desktopFilesStorageKey);
+    const parsedState = rawState ? JSON.parse(rawState) : {};
+    const desktopItems = Array.isArray(parsedState.desktopItems)
+      ? parsedState.desktopItems.map(normalizeDesktopFile).filter(Boolean)
+      : [];
+    const recycleBinItems = Array.isArray(parsedState.recycleBinItems)
+      ? parsedState.recycleBinItems.map(normalizeDesktopFile).filter(Boolean)
+      : [];
+    const maxFileId = [...desktopItems, ...recycleBinItems].reduce((maxId, item) => {
+      return Math.max(maxId, getDesktopFileNumericId(item));
+    }, 0);
+    const nextDesktopFileId = Math.max(
+      Number.isInteger(parsedState.nextDesktopFileId) ? parsedState.nextDesktopFileId : 1,
+      maxFileId + 1
+    );
+
+    return {
+      desktopItems,
+      recycleBinItems,
+      nextDesktopFileId,
+    };
+  } catch {
+    return {
+      desktopItems: [],
+      recycleBinItems: [],
+      nextDesktopFileId: 1,
+    };
+  }
+}
+
+function saveDesktopFilesState() {
+  const state = {
+    nextDesktopFileId: system.nextDesktopFileId,
+    desktopItems: system.desktopItems.filter(isUserDesktopFile).map(serializeDesktopFile),
+    recycleBinItems: system.recycleBinItems.filter(isUserDesktopFile).map(serializeDesktopFile),
+  };
+
+  try {
+    window.localStorage.setItem(desktopFilesStorageKey, JSON.stringify(state));
+  } catch {
+    // Keep the in-memory desktop usable if storage quota is unavailable.
   }
 }
 
@@ -459,6 +570,7 @@ function finishDesktopItemRename(itemId, rawTitle) {
 
   item.title = getUniqueDesktopTitle(rawTitle, item.id);
   renamingDesktopItemId = null;
+  saveDesktopFilesState();
   renderDesktopIcons();
 }
 
@@ -686,7 +798,10 @@ function renderDesktopContextMenu() {
       ${
         isRecycleBin
           ? ""
-          : '<button class="context-menu__item" type="button" data-context-action="delete-item">Delete</button>'
+          : `
+            <button class="context-menu__item" type="button" data-context-action="rename-item">Rename</button>
+            <button class="context-menu__item" type="button" data-context-action="delete-item">Delete</button>
+          `
       }
       ${
         isRecycleBin
@@ -1278,6 +1393,12 @@ desktopContextMenuElement.addEventListener("click", (event) => {
     openDesktopItem(system.getDesktopItem(contextItemId));
   }
 
+  if (contextAction === "rename-item" && contextItemId) {
+    renamingDesktopItemId = contextItemId;
+    clearDesktopIconSelection();
+    renderDesktopIcons();
+  }
+
   if (contextAction === "delete-item" && contextItemId) {
     const selectedItemIds = getSelectedDesktopItemIds();
     system.deleteDesktopItems(
@@ -1384,11 +1505,13 @@ window.addEventListener("resize", () => {
       item.gridColumn = nextSlot.gridColumn;
       item.gridRow = nextSlot.gridRow;
       occupiedSlots.add(slotKey);
-  });
+    });
 
+  saveDesktopFilesState();
   renderDesktopIcons();
 });
 
+system.loadDesktopFiles();
 system.initializeDesktopItems();
 applyDesktopBackground(system.desktopBackground);
 renderDesktopIcons();
