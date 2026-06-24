@@ -292,6 +292,8 @@ iframe {
 }
 
 .start-menu__content {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   padding: 7px 5px;
 }
@@ -372,7 +374,7 @@ iframe {
 
 .start-menu__divider {
   height: 2px;
-  margin: 5px 2px;
+  margin: auto 2px 5px;
   background: linear-gradient(180deg, var(--surface-dark) 0 50%, var(--surface-light) 50% 100%);
 }
 
