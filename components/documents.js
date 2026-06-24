@@ -1,4 +1,4 @@
-const DOCUMENT_ITEMS = [
+export const DOCUMENT_ITEMS = [
   {
     id: "moon-note",
     title: "moon-note.txt",
@@ -116,6 +116,28 @@ function escapeHtml(value) {
 
 function getDocument(itemId) {
   return DOCUMENT_ITEMS.find((item) => item.id === itemId) ?? DOCUMENT_ITEMS[0];
+}
+
+export function getDocumentWallpaperItems() {
+  return DOCUMENT_ITEMS.filter((item) => item.paintFile);
+}
+
+export function renderPaintFileToDataUrl(paintFile) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 320;
+  canvas.height = 200;
+
+  const context = canvas.getContext("2d");
+  context.imageSmoothingEnabled = false;
+  context.fillStyle = paintFile?.background ?? "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  (paintFile?.rects ?? []).forEach(([color, x, y, width, height]) => {
+    context.fillStyle = color;
+    context.fillRect(x, y, width, height);
+  });
+
+  return canvas.toDataURL("image/png");
 }
 
 function renderDocumentRows(selectedItemId) {

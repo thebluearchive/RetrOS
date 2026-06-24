@@ -11,6 +11,7 @@ const desktopIconsElement = document.querySelector(".desktop-icons");
 const desktopContextMenuElement = document.getElementById("desktop-context-menu");
 const shutdownScreenElement = document.getElementById("shutdown-screen");
 const shutdownSequenceDuration = 2000;
+const desktopBackgroundStorageKey = "win95-desktop-background";
 const recycleBinEmptyIcon = "./res/png/recycle_bin_empty-0.png";
 const recycleBinFullIcon = "./res/png/recycle_bin_full-0.png";
 const desktopGrid = {
@@ -87,6 +88,7 @@ const initialDesktopItems = [
 const system = {
   desktopItems: initialDesktopItems.map((item) => ({ ...item })),
   recycleBinItems: [],
+  desktopBackground: loadDesktopBackground(),
   initializeDesktopItems() {
     this.desktopItems = this.desktopItems.map((item) => {
       if (Number.isInteger(item.gridColumn) && Number.isInteger(item.gridRow)) {
@@ -257,6 +259,11 @@ const system = {
     renderDesktopIcons();
     windowManager.syncWindowsByAppId("recycle-bin");
   },
+  setDesktopBackground(background) {
+    this.desktopBackground = normalizeDesktopBackground(background);
+    saveDesktopBackground(this.desktopBackground);
+    applyDesktopBackground(this.desktopBackground);
+  },
 };
 
 desktopSelectionElement.className = "desktop-selection desktop-selection--hidden";
@@ -281,6 +288,63 @@ function updateClock() {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function normalizeDesktopBackground(background) {
+  const color =
+    typeof background?.color === "string" && /^#[0-9a-f]{6}$/i.test(background.color)
+      ? background.color
+      : "#008080";
+
+  if (background?.type === "document-image" || background?.type === "uploaded-image") {
+    return {
+      type: background.type,
+      color,
+      image: typeof background.image === "string" ? background.image : null,
+      sourceId: typeof background.sourceId === "string" ? background.sourceId : null,
+      sourceName: typeof background.sourceName === "string" ? background.sourceName : "Image",
+    };
+  }
+
+  return {
+    type: "color",
+    color,
+    image: null,
+    sourceId: null,
+    sourceName: "Solid color",
+  };
+}
+
+function loadDesktopBackground() {
+  try {
+    const rawBackground = window.localStorage.getItem(desktopBackgroundStorageKey);
+    return normalizeDesktopBackground(rawBackground ? JSON.parse(rawBackground) : null);
+  } catch {
+    return normalizeDesktopBackground(null);
+  }
+}
+
+function saveDesktopBackground(background) {
+  try {
+    window.localStorage.setItem(desktopBackgroundStorageKey, JSON.stringify(background));
+  } catch {
+    // Large uploaded images may exceed localStorage. The background still applies for this session.
+  }
+}
+
+function applyDesktopBackground(background) {
+  const normalizedBackground = normalizeDesktopBackground(background);
+  const backgroundImage =
+    normalizedBackground.image && normalizedBackground.type !== "color"
+      ? `url("${normalizedBackground.image}")`
+      : "none";
+
+  document.documentElement.style.setProperty("--desktop-bg", normalizedBackground.color);
+  desktopElement.style.backgroundColor = normalizedBackground.color;
+  desktopElement.style.backgroundImage = backgroundImage;
+  desktopElement.style.backgroundPosition = "center";
+  desktopElement.style.backgroundRepeat = "no-repeat";
+  desktopElement.style.backgroundSize = "cover";
 }
 
 function setStartMenuState(isOpen) {
@@ -527,6 +591,7 @@ function renderDesktopContextMenu() {
     <button class="context-menu__item" type="button" data-context-action="open-browser">Open Internet Explorer</button>
     <button class="context-menu__item" type="button" data-context-action="refresh-desktop">Refresh</button>
     <div class="context-menu__divider" aria-hidden="true"></div>
+    <button class="context-menu__item" type="button" data-context-action="set-background">Set Background...</button>
     <button class="context-menu__item" type="button" data-context-action="open-computer">Properties</button>
   `;
 }
@@ -999,6 +1064,10 @@ desktopContextMenuElement.addEventListener("click", (event) => {
     windowManager.render();
   }
 
+  if (contextAction === "set-background") {
+    windowManager.openWindow("desktop-background");
+  }
+
   if (contextAction === "open-computer") {
     windowManager.openWindow("my-computer");
   }
@@ -1122,6 +1191,7 @@ window.addEventListener("resize", () => {
 });
 
 system.initializeDesktopItems();
+applyDesktopBackground(system.desktopBackground);
 renderDesktopIcons();
 updateClock();
 setStartMenuState(false);
