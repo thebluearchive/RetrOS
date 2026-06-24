@@ -175,6 +175,23 @@ iframe {
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.75);
 }
 
+.desktop-icon__rename-input {
+  width: 92px;
+  min-height: 24px;
+  padding: 1px 3px;
+  border: 1px solid #000000;
+  background: #ffffff;
+  color: #000000;
+  font: inherit;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.desktop-icon__rename-input:focus {
+  outline: 1px dotted #000000;
+  outline-offset: -3px;
+}
+
 .desktop-icon--selected .desktop-icon__label {
   background: var(--active-blue);
 }
@@ -244,6 +261,52 @@ iframe {
   height: 2px;
   margin: 4px 2px;
   background: linear-gradient(180deg, var(--surface-dark) 0 50%, var(--surface-light) 50% 100%);
+}
+
+.context-menu__submenu-root {
+  position: relative;
+}
+
+.context-menu__item--has-submenu {
+  position: relative;
+  padding-right: 29px;
+}
+
+.context-menu__submenu-root:hover > .context-menu__item,
+.context-menu__submenu-root:focus-within > .context-menu__item {
+  background: var(--active-blue);
+  color: var(--surface-light);
+}
+
+.context-menu__submenu-arrow {
+  position: absolute;
+  right: 10px;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid currentColor;
+}
+
+.context-menu__flyout {
+  position: absolute;
+  top: -4px;
+  left: calc(100% - 1px);
+  z-index: 21;
+  display: none;
+  min-width: 190px;
+  padding: 4px;
+  background: var(--surface);
+  border-top: 2px solid var(--surface-light);
+  border-left: 2px solid var(--surface-light);
+  border-right: 2px solid var(--surface-shadow);
+  border-bottom: 2px solid var(--surface-shadow);
+  box-shadow: inset -1px -1px 0 var(--surface-dark), inset 1px 1px 0 var(--surface-mid);
+}
+
+.context-menu__submenu-root:hover > .context-menu__flyout,
+.context-menu__submenu-root:focus-within > .context-menu__flyout {
+  display: block;
 }
 
 .start-menu {

@@ -29,8 +29,11 @@ let desktopDragState = null;
 let desktopContextMenuState = {
   type: "desktop",
   itemId: null,
+  clientX: 0,
+  clientY: 0,
 };
 let suppressDesktopIconClick = false;
+let renamingDesktopItemId = null;
 
 const initialDesktopItems = [
   {
@@ -89,6 +92,7 @@ const system = {
   desktopItems: initialDesktopItems.map((item) => ({ ...item })),
   recycleBinItems: [],
   desktopBackground: loadDesktopBackground(),
+  nextDesktopFileId: 1,
   initializeDesktopItems() {
     this.desktopItems = this.desktopItems.map((item) => {
       if (Number.isInteger(item.gridColumn) && Number.isInteger(item.gridRow)) {
@@ -264,6 +268,30 @@ const system = {
     saveDesktopBackground(this.desktopBackground);
     applyDesktopBackground(this.desktopBackground);
   },
+  createDesktopFile(fileType, preferredSlot = null) {
+    const fileDefinition = getDesktopFileDefinition(fileType);
+    if (!fileDefinition) {
+      return null;
+    }
+
+    const item = {
+      id: `desktop-file-${this.nextDesktopFileId}`,
+      appId: fileDefinition.appId,
+      title: getUniqueDesktopTitle("Untitled"),
+      icon: fileDefinition.icon,
+      order: getNextDesktopItemOrder(),
+      fileType,
+      content: fileDefinition.content,
+      paintFile: fileDefinition.paintFile,
+      ...this.getNextAvailableDesktopSlot(preferredSlot),
+    };
+
+    this.nextDesktopFileId += 1;
+    this.desktopItems.push(item);
+    renamingDesktopItemId = item.id;
+    renderDesktopIcons();
+    return item;
+  },
 };
 
 desktopSelectionElement.className = "desktop-selection desktop-selection--hidden";
@@ -347,6 +375,93 @@ function applyDesktopBackground(background) {
   desktopElement.style.backgroundSize = "cover";
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function getDesktopFileDefinition(fileType) {
+  if (fileType === "note") {
+    return {
+      appId: "notepad",
+      icon: "./res/png/notepad_file-0.png",
+      content: "",
+      paintFile: null,
+    };
+  }
+
+  if (fileType === "paint") {
+    return {
+      appId: "paint",
+      icon: "./res/png/paint_file-0.png",
+      content: "",
+      paintFile: null,
+    };
+  }
+
+  return null;
+}
+
+function getNextDesktopItemOrder() {
+  return system.desktopItems.reduce((maxOrder, item) => Math.max(maxOrder, item.order), -1) + 1;
+}
+
+function getUniqueDesktopTitle(baseTitle, excludedItemId = null) {
+  const normalizedBaseTitle = String(baseTitle ?? "").trim() || "Untitled";
+  const existingTitles = new Set(
+    system.desktopItems
+      .filter((item) => item.id !== excludedItemId)
+      .map((item) => item.title.toLocaleLowerCase())
+  );
+
+  if (!existingTitles.has(normalizedBaseTitle.toLocaleLowerCase())) {
+    return normalizedBaseTitle;
+  }
+
+  let index = 2;
+  let nextTitle = `${normalizedBaseTitle} (${index})`;
+
+  while (existingTitles.has(nextTitle.toLocaleLowerCase())) {
+    index += 1;
+    nextTitle = `${normalizedBaseTitle} (${index})`;
+  }
+
+  return nextTitle;
+}
+
+function getDesktopSlotFromClientPoint(clientX, clientY) {
+  const desktopRect = desktopElement.getBoundingClientRect();
+  return getNearestDesktopSlot(clientX - desktopRect.left, clientY - desktopRect.top);
+}
+
+function openDesktopItem(item) {
+  if (!item || !windowManager.hasApp(item.appId)) {
+    return;
+  }
+
+  windowManager.openWindow(item.appId, {
+    fileName: item.title,
+    content: item.content,
+    paintFile: item.paintFile,
+  });
+}
+
+function finishDesktopItemRename(itemId, rawTitle) {
+  const item = system.getDesktopItem(itemId);
+  if (!item) {
+    renamingDesktopItemId = null;
+    renderDesktopIcons();
+    return;
+  }
+
+  item.title = getUniqueDesktopTitle(rawTitle, item.id);
+  renamingDesktopItemId = null;
+  renderDesktopIcons();
+}
+
 function setStartMenuState(isOpen) {
   startMenu.classList.toggle("start-menu--hidden", !isOpen);
   startMenu.setAttribute("aria-hidden", String(!isOpen));
@@ -407,6 +522,8 @@ function setDesktopContextMenuState(isOpen, x = 0, y = 0) {
 
 function closeDesktopContextMenu() {
   desktopContextMenuElement.dataset.contextItemId = "";
+  desktopContextMenuState.clientX = 0;
+  desktopContextMenuState.clientY = 0;
   setDesktopContextMenuState(false);
 }
 
@@ -588,8 +705,17 @@ function renderDesktopContextMenu() {
   desktopContextMenuElement.dataset.contextItemId = "";
 
   desktopContextMenuElement.innerHTML = `
-    <button class="context-menu__item" type="button" data-context-action="open-browser">Open Internet Explorer</button>
     <button class="context-menu__item" type="button" data-context-action="refresh-desktop">Refresh</button>
+    <div class="context-menu__submenu-root">
+      <button class="context-menu__item context-menu__item--has-submenu" type="button" aria-haspopup="true">
+        <span>New</span>
+        <span class="context-menu__submenu-arrow" aria-hidden="true"></span>
+      </button>
+      <section class="context-menu__flyout" aria-label="New file submenu">
+        <button class="context-menu__item" type="button" data-new-file-type="note">Note Document</button>
+        <button class="context-menu__item" type="button" data-new-file-type="paint">Paint Document</button>
+      </section>
+    </div>
     <div class="context-menu__divider" aria-hidden="true"></div>
     <button class="context-menu__item" type="button" data-context-action="set-background">Set Background...</button>
     <button class="context-menu__item" type="button" data-context-action="open-computer">Properties</button>
@@ -613,13 +739,26 @@ function renderDesktopIcons() {
     })
     .map((item) => {
       const isSelected = selectedIds.has(item.id);
+      const isRenaming = renamingDesktopItemId === item.id;
       const icon = item.appId === "recycle-bin" ? system.getRecycleBinIcon() : item.icon;
       const position = getDesktopPositionFromSlot(item.gridColumn, item.gridRow);
+      const labelMarkup = isRenaming
+        ? `
+          <input
+            class="desktop-icon__rename-input"
+            type="text"
+            value="${escapeHtml(item.title)}"
+            data-desktop-rename-input="${item.id}"
+            aria-label="File name"
+          >
+        `
+        : `<span class="desktop-icon__label">${escapeHtml(item.title)}</span>`;
 
       return `
-        <button
+        <div
           class="desktop-icon ${isSelected ? "desktop-icon--selected" : ""}"
-          type="button"
+          role="button"
+          tabindex="0"
           data-desktop-item-id="${item.id}"
           data-app-id="${item.appId}"
           aria-selected="${String(isSelected)}"
@@ -627,11 +766,21 @@ function renderDesktopIcons() {
           style="left: ${position.left}px; top: ${position.top}px;"
         >
           <img class="desktop-icon__image" src="${icon}" alt="" width="32" height="32" draggable="false">
-          <span class="desktop-icon__label">${item.title}</span>
-        </button>
+          ${labelMarkup}
+        </div>
       `;
     })
     .join("");
+
+  if (renamingDesktopItemId) {
+    window.requestAnimationFrame(() => {
+      const input = desktopIconsElement.querySelector(
+        `[data-desktop-rename-input="${renamingDesktopItemId}"]`
+      );
+      input?.focus();
+      input?.select();
+    });
+  }
 }
 
 function setDesktopSelectionState(isVisible, rect = null) {
@@ -763,6 +912,10 @@ desktopIconsElement.addEventListener("mousedown", (event) => {
     return;
   }
 
+  if (event.target.closest("[data-desktop-rename-input]")) {
+    return;
+  }
+
   const icon = event.target.closest(".desktop-icon");
   if (!icon) {
     return;
@@ -845,18 +998,23 @@ desktopElement.addEventListener("mousedown", (event) => {
 });
 
 desktopIconsElement.addEventListener("dblclick", (event) => {
+  if (event.target.closest("[data-desktop-rename-input]")) {
+    return;
+  }
+
   const icon = event.target.closest("[data-app-id]");
   if (!icon) {
     return;
   }
 
-  const { appId } = icon.dataset;
-  if (windowManager.hasApp(appId)) {
-    windowManager.openWindow(appId);
-  }
+  openDesktopItem(system.getDesktopItem(icon.dataset.desktopItemId));
 });
 
 desktopIconsElement.addEventListener("click", (event) => {
+  if (event.target.closest("[data-desktop-rename-input]")) {
+    return;
+  }
+
   if (suppressDesktopIconClick) {
     suppressDesktopIconClick = false;
     event.preventDefault();
@@ -874,8 +1032,30 @@ desktopIconsElement.addEventListener("click", (event) => {
 });
 
 desktopIconsElement.addEventListener("keydown", (event) => {
+  const renameInput = event.target.closest("[data-desktop-rename-input]");
+  if (renameInput) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      finishDesktopItemRename(renameInput.dataset.desktopRenameInput, renameInput.value);
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      renamingDesktopItemId = null;
+      renderDesktopIcons();
+    }
+
+    return;
+  }
+
   const icon = event.target.closest(".desktop-icon");
   if (!icon) {
+    return;
+  }
+
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    openDesktopItem(system.getDesktopItem(icon.dataset.desktopItemId));
     return;
   }
 
@@ -890,6 +1070,15 @@ desktopIconsElement.addEventListener("keydown", (event) => {
 
     system.deleteDesktopItems(getSelectedDesktopItemIds());
   }
+});
+
+desktopIconsElement.addEventListener("focusout", (event) => {
+  const renameInput = event.target.closest("[data-desktop-rename-input]");
+  if (!renameInput || renamingDesktopItemId !== renameInput.dataset.desktopRenameInput) {
+    return;
+  }
+
+  finishDesktopItemRename(renameInput.dataset.desktopRenameInput, renameInput.value);
 });
 
 desktopIconsElement.addEventListener("contextmenu", (event) => {
@@ -910,6 +1099,8 @@ desktopIconsElement.addEventListener("contextmenu", (event) => {
   desktopContextMenuState = {
     type: "item",
     itemId: icon.dataset.desktopItemId ?? null,
+    clientX: event.clientX,
+    clientY: event.clientY,
   };
   setDesktopContextMenuState(true, event.clientX, event.clientY);
 });
@@ -924,6 +1115,8 @@ desktopElement.addEventListener("contextmenu", (event) => {
   desktopContextMenuState = {
     type: "desktop",
     itemId: null,
+    clientX: event.clientX,
+    clientY: event.clientY,
   };
   setDesktopContextMenuState(true, event.clientX, event.clientY);
 });
@@ -1048,6 +1241,19 @@ document.addEventListener("mouseup", (event) => {
 });
 
 desktopContextMenuElement.addEventListener("click", (event) => {
+  const newFileItem = event.target.closest("[data-new-file-type]");
+  if (newFileItem) {
+    const newItem = system.createDesktopFile(
+      newFileItem.dataset.newFileType,
+      getDesktopSlotFromClientPoint(desktopContextMenuState.clientX, desktopContextMenuState.clientY)
+    );
+    if (newItem) {
+      clearDesktopIconSelection();
+    }
+    closeDesktopContextMenu();
+    return;
+  }
+
   const menuItem = event.target.closest("[data-context-action]");
   if (!menuItem) {
     return;
@@ -1055,10 +1261,6 @@ desktopContextMenuElement.addEventListener("click", (event) => {
 
   const { contextAction } = menuItem.dataset;
   const contextItemId = desktopContextMenuElement.dataset.contextItemId || desktopContextMenuState.itemId;
-
-  if (contextAction === "open-browser") {
-    windowManager.openWindow("browser");
-  }
 
   if (contextAction === "refresh-desktop") {
     windowManager.render();
@@ -1073,10 +1275,7 @@ desktopContextMenuElement.addEventListener("click", (event) => {
   }
 
   if (contextAction === "open-item" && contextItemId) {
-    const item = system.getDesktopItem(contextItemId);
-    if (item && windowManager.hasApp(item.appId)) {
-      windowManager.openWindow(item.appId);
-    }
+    openDesktopItem(system.getDesktopItem(contextItemId));
   }
 
   if (contextAction === "delete-item" && contextItemId) {

@@ -41,9 +41,19 @@
       aria-label="Desktop context menu"
       aria-hidden="true"
     >
-      <button class="context-menu__item" type="button" data-context-action="open-browser">Open Internet Explorer</button>
       <button class="context-menu__item" type="button" data-context-action="refresh-desktop">Refresh</button>
+      <div class="context-menu__submenu-root">
+        <button class="context-menu__item context-menu__item--has-submenu" type="button" aria-haspopup="true">
+          <span>New</span>
+          <span class="context-menu__submenu-arrow" aria-hidden="true"></span>
+        </button>
+        <section class="context-menu__flyout" aria-label="New file submenu">
+          <button class="context-menu__item" type="button" data-new-file-type="note">Note Document</button>
+          <button class="context-menu__item" type="button" data-new-file-type="paint">Paint Document</button>
+        </section>
+      </div>
       <div class="context-menu__divider" aria-hidden="true"></div>
+      <button class="context-menu__item" type="button" data-context-action="set-background">Set Background...</button>
       <button class="context-menu__item" type="button" data-context-action="open-computer">Properties</button>
     </section>
   </main>
