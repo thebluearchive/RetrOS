@@ -170,6 +170,10 @@ export const myComputerApp = {
             <img class="my-computer-app__toolbar-icon" src="./res/png/settings_gear-0.png" alt="" width="18" height="18">
             <span>Properties</span>
           </button>
+          <button class="win95-button my-computer-app__toolbar-button" type="button" data-my-computer-action="reset">
+            <img class="my-computer-app__toolbar-icon" src="./res/png/windows_update_old-0.png" alt="" width="18" height="18">
+            <span>Reset</span>
+          </button>
         </div>
         <div class="my-computer-app__address">
           <span class="my-computer-app__address-label">Address</span>
@@ -289,6 +293,11 @@ export const myComputerApp = {
           windowItem.data.selectedItemId = windowItem.data.selectedItemId || "drive-c";
           windowItem.data.isPropertiesOpen = true;
           windowManager.syncAppWindow(windowItem.id);
+          return true;
+        }
+
+        if (actionButton.dataset.myComputerAction === "reset") {
+          document.dispatchEvent(new CustomEvent("win95:reset"));
           return true;
         }
       }

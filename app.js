@@ -1765,6 +1765,14 @@ document.addEventListener("win95:shutdown", (event) => {
   startShutdownSequence();
 });
 
+document.addEventListener("win95:reset", () => {
+  try {
+    window.localStorage.clear();
+  } finally {
+    window.location.reload();
+  }
+});
+
 document.addEventListener("click", (event) => {
   if (document.body.classList.contains("is-shut-down")) {
     return;
