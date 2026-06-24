@@ -1,5 +1,13 @@
 const PROJECTS = [
   {
+    title: "RetrOS",
+    description: "The current Windows 95-style desktop project.",
+    pageUrl: "https://github.com/thebluearchive/RetrOS",
+    sourceUrl: "https://github.com/thebluearchive/RetrOS",
+    icon: "./res/png/computer_2-0.png",
+    openExternally: true,
+  },
+  {
     title: "blog",
     description: "A publishing project from The Blue Archive.",
     pageUrl: "https://thebluearchive.github.io/blog/",
@@ -45,13 +53,22 @@ function openProjectInBrowser(project, windowManager) {
   return true;
 }
 
+function openProject(project, windowManager) {
+  if (project.openExternally) {
+    window.open(project.pageUrl, "_blank", "noopener,noreferrer");
+    return true;
+  }
+
+  return openProjectInBrowser(project, windowManager);
+}
+
 export const projectsApp = {
   id: "projects",
   title: "Projects",
   icon: "./res/png/briefcase-0.png",
   defaultSize: {
-    width: 568,
-    height: 372,
+    width: 700,
+    height: 500,
   },
   minSize: {
     width: 360,
@@ -90,7 +107,6 @@ export const projectsApp = {
       return true;
     }
 
-    openProjectInBrowser(project, windowManager);
-    return true;
+    return openProject(project, windowManager);
   },
 };
