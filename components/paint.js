@@ -126,6 +126,18 @@ function clearCanvas(windowManager, windowItem) {
 
 function renderPaintFile(canvas, paintFile) {
   const context = canvas.getContext("2d");
+
+  if (typeof paintFile?.imageData === "string" && paintFile.imageData) {
+    const image = new Image();
+    image.addEventListener("load", () => {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      canvas.dataset.paintInitialized = "true";
+    });
+    image.src = paintFile.imageData;
+    return;
+  }
+
   context.fillStyle = paintFile?.background ?? "#ffffff";
   context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -137,19 +149,53 @@ function renderPaintFile(canvas, paintFile) {
   canvas.dataset.paintInitialized = "true";
 }
 
-function downloadCanvas(windowManager, windowItem) {
+function serializeCanvas(windowManager, windowItem) {
   const canvas = getCanvas(windowManager, windowItem);
   if (!canvas) {
-    return;
+    return null;
   }
 
   initializeCanvas(canvas);
+  return {
+    id: windowItem.data.fileRef?.itemId ?? windowItem.id,
+    imageData: canvas.toDataURL("image/png"),
+    background: "#ffffff",
+    rects: [],
+  };
+}
+
+function savePaintFile(windowItem, windowManager, system, nextFileName = windowItem.data.fileName) {
+  const paintFile = serializeCanvas(windowManager, windowItem);
+  if (!paintFile) {
+    return false;
+  }
+
+  if (typeof system?.saveAppFile === "function") {
+    const result = system.saveAppFile({
+      appId: "paint",
+      fileName: nextFileName,
+      paintFile,
+      fileRef: windowItem.data.fileRef,
+    });
+
+    if (result) {
+      windowItem.data.fileName = result.fileName;
+      windowItem.data.fileRef = result.fileRef;
+      windowItem.data.paintFile = paintFile;
+      windowItem.data.loadedPaintFileId = paintFile.id;
+      syncPaint(windowManager, windowItem);
+      return true;
+    }
+  }
+
   const link = document.createElement("a");
-  link.href = canvas.toDataURL("image/png");
-  link.download = (windowItem.data.fileName || "paint.bmp").replace(/\.[^.]+$/, ".png");
+  link.href = paintFile.imageData;
+  link.download = nextFileName.replace(/\.[^.]+$/, ".png");
   document.body.appendChild(link);
   link.click();
   link.remove();
+  syncPaint(windowManager, windowItem);
+  return true;
 }
 
 function closeMenus(windowItem) {
@@ -206,10 +252,11 @@ function renderMenu(menuName, items, activeMenu) {
   `;
 }
 
-function handleMenuAction(action, windowItem, windowManager) {
+function handleMenuAction(action, windowItem, windowManager, system = null) {
   if (action === "new") {
     windowItem.data.fileName = "Untitled.bmp";
     windowItem.data.paintFile = null;
+    windowItem.data.fileRef = null;
     windowItem.data.loadedPaintFileId = null;
     clearCanvas(windowManager, windowItem);
     syncPaint(windowManager, windowItem);
@@ -223,9 +270,7 @@ function handleMenuAction(action, windowItem, windowManager) {
   }
 
   if (action === "save") {
-    downloadCanvas(windowManager, windowItem);
-    syncPaint(windowManager, windowItem);
-    return true;
+    return savePaintFile(windowItem, windowManager, system);
   }
 
   if (action === "exit") {
@@ -314,6 +359,7 @@ export const paintApp = {
       isAboutOpen: false,
       fileName: "Untitled.bmp",
       paintFile: null,
+      fileRef: null,
       loadedPaintFileId: null,
     };
   },
@@ -326,6 +372,8 @@ export const paintApp = {
       windowItem.data.paintFile = options.paintFile;
       windowItem.data.loadedPaintFileId = null;
     }
+
+    windowItem.data.fileRef = options.fileRef ?? null;
 
     windowItem.data.activeMenu = null;
     windowItem.data.isAboutOpen = false;
@@ -351,7 +399,7 @@ export const paintApp = {
             ${renderSizeButtons(windowItem.data.brushSize)}
           </div>
           <button class="win95-button paint-app__command" type="button" data-paint-action="clear">Clear</button>
-          <button class="win95-button paint-app__command" type="button" data-paint-action="download">Save</button>
+          <button class="win95-button paint-app__command" type="button" data-paint-action="save">Save</button>
         </div>
         <div class="paint-app__workspace">
           <div class="paint-app__palette" aria-label="Color palette">
@@ -443,7 +491,7 @@ export const paintApp = {
       dialogLayer.setAttribute("aria-hidden", String(!windowItem.data.isAboutOpen));
     }
   },
-  handleEvent({ type, event, windowItem, windowManager }) {
+  handleEvent({ type, event, windowItem, windowManager, system }) {
     if (type === "click") {
       const aboutClose = event.target.closest("[data-paint-about-close]");
       if (aboutClose) {
@@ -462,7 +510,7 @@ export const paintApp = {
 
       const menuAction = event.target.closest("[data-paint-menu-action]");
       if (menuAction) {
-        return handleMenuAction(menuAction.dataset.paintMenuAction, windowItem, windowManager);
+        return handleMenuAction(menuAction.dataset.paintMenuAction, windowItem, windowManager, system);
       }
 
       const toolButton = event.target.closest("[data-paint-tool]");
@@ -494,10 +542,8 @@ export const paintApp = {
         return true;
       }
 
-      if (actionButton?.dataset.paintAction === "download") {
-        downloadCanvas(windowManager, windowItem);
-        syncPaint(windowManager, windowItem);
-        return true;
+      if (actionButton?.dataset.paintAction === "save") {
+        return savePaintFile(windowItem, windowManager, system);
       }
 
       return false;
@@ -532,17 +578,17 @@ export const paintApp = {
 
       if (event.ctrlKey && key === "n") {
         event.preventDefault();
-        return handleMenuAction("new", windowItem, windowManager);
+        return handleMenuAction("new", windowItem, windowManager, system);
       }
 
       if (event.ctrlKey && key === "s") {
         event.preventDefault();
-        return handleMenuAction("save", windowItem, windowManager);
+        return handleMenuAction("save", windowItem, windowManager, system);
       }
 
       if (event.key === "Delete") {
         event.preventDefault();
-        return handleMenuAction("clear", windowItem, windowManager);
+        return handleMenuAction("clear", windowItem, windowManager, system);
       }
     }
 

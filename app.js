@@ -14,6 +14,7 @@ const shutdownScreenElement = document.getElementById("shutdown-screen");
 const shutdownSequenceDuration = 2000;
 const desktopBackgroundStorageKey = "win95-desktop-background";
 const desktopFilesStorageKey = "win95-desktop-files";
+const documentTitlesStorageKey = "win95-documents-titles";
 const recycleBinEmptyIcon = "./res/png/recycle_bin_empty-0.png";
 const recycleBinFullIcon = "./res/png/recycle_bin_full-0.png";
 const desktopGrid = {
@@ -39,6 +40,22 @@ let desktopContextMenuState = {
 let suppressDesktopIconClick = false;
 let renamingDesktopItemId = null;
 let documentDragState = null;
+
+function getVirtualMachineDepth() {
+  const params = new URLSearchParams(window.location.search);
+  return Number.parseInt(params.get("vm") ?? "0", 10) || 0;
+}
+
+function getStorageKey(baseKey) {
+  const vmDepth = getVirtualMachineDepth();
+  return vmDepth > 0 ? `${baseKey}::vm-${vmDepth}` : baseKey;
+}
+
+function clearCurrentDesktopStorage() {
+  [desktopBackgroundStorageKey, desktopFilesStorageKey, documentTitlesStorageKey].forEach((key) => {
+    window.localStorage.removeItem(getStorageKey(key));
+  });
+}
 
 const initialDesktopItems = [
   {
@@ -292,6 +309,80 @@ const system = {
   saveFileState() {
     saveDesktopFilesState();
   },
+  saveAppFile({ appId, fileName, content = "", paintFile = null, fileRef = null }) {
+    const normalizedAppId = appId === "paint" ? "paint" : "notepad";
+    const normalizedFileName = String(fileName ?? "").trim() || (normalizedAppId === "paint" ? "Untitled.bmp" : "Untitled.txt");
+    const modified = new Date().toLocaleDateString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "2-digit",
+    });
+
+    if (fileRef?.location === "desktop") {
+      const item = this.getDesktopItem(fileRef.itemId);
+      if (item) {
+        item.title = getUniqueDesktopTitle(normalizedFileName, item.id);
+        item.content = normalizedAppId === "notepad" ? content : "";
+        item.paintFile = normalizedAppId === "paint" ? paintFile : null;
+        item.appId = normalizedAppId;
+        item.fileType = normalizedAppId === "paint" ? "paint" : "note";
+        saveDesktopFilesState();
+        renderDesktopIcons();
+        windowManager.syncWindowsByAppId("documents");
+        return {
+          fileRef,
+          fileName: item.title,
+        };
+      }
+    }
+
+    if (fileRef?.location === "documents") {
+      const item = this.getDocumentItem(fileRef.itemId);
+      if (item) {
+        item.title = getUniqueDocumentSystemTitle(normalizedFileName, item.id);
+        item.modified = modified;
+        item.appId = normalizedAppId;
+        item.icon =
+          normalizedAppId === "paint" ? "./res/png/paint_file-0.png" : "./res/png/notepad_file-0.png";
+        item.type = normalizedAppId === "paint" ? "Bitmap Image" : "Text Document";
+        item.actionLabel = normalizedAppId === "paint" ? "Open in Paint" : "Open in Notepad";
+        item.content = normalizedAppId === "notepad" ? content : "";
+        item.preview =
+          normalizedAppId === "paint"
+            ? `Bitmap image: ${item.title}\n\nOpen this file in Paint to view the image.`
+            : buildTextPreview(content);
+        item.paintFile = normalizedAppId === "paint" ? paintFile : null;
+        item.size = getFileSizeLabel(normalizedAppId, content, paintFile);
+        saveDesktopFilesState();
+        renderDesktopIcons();
+        windowManager.syncWindowsByAppId("documents");
+        return {
+          fileRef,
+          fileName: item.title,
+        };
+      }
+    }
+
+    const newItem = this.createDesktopFile(normalizedAppId === "paint" ? "paint" : "note");
+    if (!newItem) {
+      return null;
+    }
+
+    renamingDesktopItemId = null;
+    newItem.title = getUniqueDesktopTitle(normalizedFileName, newItem.id);
+    newItem.content = normalizedAppId === "notepad" ? content : "";
+    newItem.paintFile = normalizedAppId === "paint" ? paintFile : null;
+    saveDesktopFilesState();
+    renderDesktopIcons();
+
+    return {
+      fileRef: {
+        location: "desktop",
+        itemId: newItem.id,
+      },
+      fileName: newItem.title,
+    };
+  },
   startDocumentDrag(documentIds, event) {
     documentDragState = {
       documentIds: Array.isArray(documentIds) ? documentIds : [documentIds],
@@ -480,7 +571,7 @@ function normalizeDesktopBackground(background) {
 
 function loadDesktopBackground() {
   try {
-    const rawBackground = window.localStorage.getItem(desktopBackgroundStorageKey);
+    const rawBackground = window.localStorage.getItem(getStorageKey(desktopBackgroundStorageKey));
     return normalizeDesktopBackground(rawBackground ? JSON.parse(rawBackground) : null);
   } catch {
     return normalizeDesktopBackground(null);
@@ -489,7 +580,7 @@ function loadDesktopBackground() {
 
 function saveDesktopBackground(background) {
   try {
-    window.localStorage.setItem(desktopBackgroundStorageKey, JSON.stringify(background));
+    window.localStorage.setItem(getStorageKey(desktopBackgroundStorageKey), JSON.stringify(background));
   } catch {
     // Large uploaded images may exceed localStorage. The background still applies for this session.
   }
@@ -594,6 +685,26 @@ function normalizeDocumentItem(rawItem) {
   };
 }
 
+function buildTextPreview(content) {
+  const normalizedContent = String(content ?? "").trim();
+  if (!normalizedContent) {
+    return "Empty note";
+  }
+
+  const preview = normalizedContent.length > 120 ? `${normalizedContent.slice(0, 117)}...` : normalizedContent;
+  return preview;
+}
+
+function getFileSizeLabel(appId, content = "", paintFile = null) {
+  if (appId === "paint") {
+    const rawSize = JSON.stringify(paintFile ?? {}).length;
+    return `${Math.max(1, Math.ceil(rawSize / 1024))} KB`;
+  }
+
+  const rawSize = new Blob([String(content ?? "")]).size;
+  return `${Math.max(1, Math.ceil(rawSize / 1024))} KB`;
+}
+
 function getDesktopFileNumericId(item) {
   const match = /^desktop-file-(\d+)$/.exec(item.id);
   return match ? Number.parseInt(match[1], 10) : 0;
@@ -601,7 +712,7 @@ function getDesktopFileNumericId(item) {
 
 function loadDesktopFilesState() {
   try {
-    const rawState = window.localStorage.getItem(desktopFilesStorageKey);
+    const rawState = window.localStorage.getItem(getStorageKey(desktopFilesStorageKey));
     const parsedState = rawState ? JSON.parse(rawState) : {};
     const desktopItems = Array.isArray(parsedState.desktopItems)
       ? parsedState.desktopItems.map(normalizeDesktopFile).filter(Boolean)
@@ -645,7 +756,7 @@ function saveDesktopFilesState() {
   };
 
   try {
-    window.localStorage.setItem(desktopFilesStorageKey, JSON.stringify(state));
+    window.localStorage.setItem(getStorageKey(desktopFilesStorageKey), JSON.stringify(state));
   } catch {
     // Keep the in-memory desktop usable if storage quota is unavailable.
   }
@@ -760,6 +871,10 @@ function openDesktopItem(item) {
     fileName: item.title,
     content: item.content,
     paintFile: item.paintFile,
+    fileRef: {
+      location: "desktop",
+      itemId: item.id,
+    },
   });
 }
 
@@ -1767,7 +1882,7 @@ document.addEventListener("win95:shutdown", (event) => {
 
 document.addEventListener("win95:reset", () => {
   try {
-    window.localStorage.clear();
+    clearCurrentDesktopStorage();
   } finally {
     window.location.reload();
   }

@@ -59,6 +59,37 @@ function syncNotepad(windowManager, windowItem) {
   windowManager.syncAppWindow(windowItem.id);
 }
 
+function closeSaveAsDialog(windowItem) {
+  windowItem.data.isSaveAsOpen = false;
+}
+
+function openSaveAsDialog(windowItem) {
+  windowItem.data.saveAsValue = windowItem.data.fileName;
+  windowItem.data.isSaveAsOpen = true;
+}
+
+function saveNotepadFile(windowItem, windowManager, system, nextFileName = windowItem.data.fileName) {
+  if (typeof system?.saveAppFile === "function") {
+    const result = system.saveAppFile({
+      appId: "notepad",
+      fileName: nextFileName,
+      content: windowItem.data.content,
+      fileRef: windowItem.data.fileRef,
+    });
+
+    if (result) {
+      windowItem.data.fileName = result.fileName;
+      windowItem.data.fileRef = result.fileRef;
+      syncNotepad(windowManager, windowItem);
+      return true;
+    }
+  }
+
+  triggerDownload(nextFileName, windowItem.data.content);
+  syncNotepad(windowManager, windowItem);
+  return true;
+}
+
 function triggerDownload(filename, content) {
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -185,10 +216,11 @@ function renderMenu(menuName, items, activeMenu) {
   `;
 }
 
-async function handleMenuAction(action, windowItem, windowManager) {
+async function handleMenuAction(action, windowItem, windowManager, system = null) {
   if (action === "new") {
     windowItem.data.content = "";
     windowItem.data.fileName = "Untitled.txt";
+    windowItem.data.fileRef = null;
     syncNotepad(windowManager, windowItem);
     getEditor(windowManager, windowItem)?.focus();
     return true;
@@ -208,17 +240,11 @@ async function handleMenuAction(action, windowItem, windowManager) {
   }
 
   if (action === "save") {
-    triggerDownload(windowItem.data.fileName, windowItem.data.content);
-    syncNotepad(windowManager, windowItem);
-    return true;
+    return saveNotepadFile(windowItem, windowManager, system);
   }
 
   if (action === "save-as") {
-    const nextFileName = window.prompt("Save as", windowItem.data.fileName) ?? "";
-    if (nextFileName.trim()) {
-      windowItem.data.fileName = nextFileName.trim();
-      triggerDownload(windowItem.data.fileName, windowItem.data.content);
-    }
+    openSaveAsDialog(windowItem);
     syncNotepad(windowManager, windowItem);
     return true;
   }
@@ -334,7 +360,10 @@ export const notepadApp = {
       content: "",
       activeMenu: null,
       fileName: "Untitled.txt",
+      fileRef: null,
       isAboutOpen: false,
+      isSaveAsOpen: false,
+      saveAsValue: "Untitled.txt",
     };
   },
   applyOpenOptions(windowItem, options) {
@@ -346,11 +375,15 @@ export const notepadApp = {
       windowItem.data.content = options.content;
     }
 
+    windowItem.data.fileRef = options.fileRef ?? null;
+
     windowItem.data.activeMenu = null;
     windowItem.data.isAboutOpen = false;
+    windowItem.data.isSaveAsOpen = false;
+    windowItem.data.saveAsValue = windowItem.data.fileName;
   },
   render(windowItem) {
-    const { activeMenu, content, fileName, isAboutOpen } = windowItem.data;
+    const { activeMenu, content, fileName, isAboutOpen, isSaveAsOpen, saveAsValue } = windowItem.data;
 
     return `
       <div class="notepad-app" data-notepad-window="${windowItem.id}">
@@ -391,6 +424,32 @@ export const notepadApp = {
             </div>
           </section>
         </div>
+        <div
+          class="notepad-app__dialog-layer ${isSaveAsOpen ? "" : "notepad-app__dialog-layer--hidden"}"
+          data-notepad-save-as
+          aria-hidden="${String(!isSaveAsOpen)}"
+        >
+          <section class="notepad-app__dialog win95-panel" role="dialog" aria-modal="true" aria-labelledby="notepad-save-as-title-${windowItem.id}">
+            <div class="notepad-app__dialog-body">
+              <img class="notepad-app__dialog-icon" src="./res/png/notepad_file-0.png" alt="" width="32" height="32">
+              <div class="notepad-app__dialog-copy">
+                <h2 id="notepad-save-as-title-${windowItem.id}" class="notepad-app__dialog-title">Save As</h2>
+                <label class="notepad-app__field-label" for="notepad-save-as-input-${windowItem.id}">File name</label>
+                <input
+                  id="notepad-save-as-input-${windowItem.id}"
+                  class="notepad-app__field"
+                  type="text"
+                  value="${escapeHtml(saveAsValue)}"
+                  data-notepad-save-as-input="${windowItem.id}"
+                >
+              </div>
+            </div>
+            <div class="notepad-app__dialog-actions">
+              <button class="win95-button" type="button" data-notepad-save-as-confirm>Save</button>
+              <button class="win95-button" type="button" data-notepad-save-as-cancel>Cancel</button>
+            </div>
+          </section>
+        </div>
       </div>
     `;
   },
@@ -423,12 +482,31 @@ export const notepadApp = {
       dialogLayer.setAttribute("aria-hidden", String(!windowItem.data.isAboutOpen));
     }
 
+    const saveAsLayer = root.querySelector("[data-notepad-save-as]");
+    if (saveAsLayer) {
+      saveAsLayer.classList.toggle("notepad-app__dialog-layer--hidden", !windowItem.data.isSaveAsOpen);
+      saveAsLayer.setAttribute("aria-hidden", String(!windowItem.data.isSaveAsOpen));
+    }
+
     const fileNameText = root.querySelector("[data-notepad-file-name]");
     if (fileNameText) {
       fileNameText.textContent = windowItem.data.fileName;
     }
+
+    const saveAsInput = root.querySelector(`[data-notepad-save-as-input="${windowItem.id}"]`);
+    if (saveAsInput && document.activeElement !== saveAsInput && saveAsInput.value !== windowItem.data.saveAsValue) {
+      saveAsInput.value = windowItem.data.saveAsValue;
+    }
+
+    if (windowItem.data.isSaveAsOpen) {
+      window.requestAnimationFrame(() => {
+        const input = root.querySelector(`[data-notepad-save-as-input="${windowItem.id}"]`);
+        input?.focus();
+        input?.select();
+      });
+    }
   },
-  async handleEvent({ type, event, windowItem, windowManager }) {
+  async handleEvent({ type, event, windowItem, windowManager, system }) {
     if (type === "click") {
       const aboutClose = event.target.closest("[data-notepad-about-close]");
       if (aboutClose) {
@@ -437,9 +515,30 @@ export const notepadApp = {
         return true;
       }
 
+      const saveAsCancel = event.target.closest("[data-notepad-save-as-cancel]");
+      if (saveAsCancel) {
+        closeSaveAsDialog(windowItem);
+        windowManager.syncAppWindow(windowItem.id);
+        return true;
+      }
+
+      const saveAsConfirm = event.target.closest("[data-notepad-save-as-confirm]");
+      if (saveAsConfirm) {
+        const nextFileName = String(windowItem.data.saveAsValue ?? "").trim();
+        if (nextFileName) {
+          windowItem.data.fileName = nextFileName;
+          closeSaveAsDialog(windowItem);
+          return saveNotepadFile(windowItem, windowManager, system, nextFileName);
+        }
+
+        closeSaveAsDialog(windowItem);
+        windowManager.syncAppWindow(windowItem.id);
+        return true;
+      }
+
       const actionButton = event.target.closest("[data-notepad-action]");
       if (actionButton) {
-        return handleMenuAction(actionButton.dataset.notepadAction, windowItem, windowManager);
+        return handleMenuAction(actionButton.dataset.notepadAction, windowItem, windowManager, system);
       }
 
       const menuToggle = event.target.closest("[data-notepad-menu-toggle]");
@@ -466,12 +565,18 @@ export const notepadApp = {
 
     if (type === "input") {
       const editor = event.target.closest("[data-notepad-editor]");
-      if (!editor) {
-        return false;
+      if (editor) {
+        windowItem.data.content = editor.value;
+        return true;
       }
 
-      windowItem.data.content = editor.value;
-      return true;
+      const saveAsInput = event.target.closest("[data-notepad-save-as-input]");
+      if (saveAsInput) {
+        windowItem.data.saveAsValue = saveAsInput.value;
+        return true;
+      }
+
+      return false;
     }
 
     if (type === "change") {
@@ -485,6 +590,7 @@ export const notepadApp = {
       reader.addEventListener("load", () => {
         windowItem.data.fileName = file.name;
         windowItem.data.content = typeof reader.result === "string" ? reader.result : "";
+        windowItem.data.fileRef = null;
         windowManager.syncAppWindow(windowItem.id);
       });
       reader.readAsText(file);
@@ -512,27 +618,53 @@ export const notepadApp = {
     }
 
     if (type === "keydown") {
+      const saveAsInput = event.target.closest("[data-notepad-save-as-input]");
+      if (saveAsInput) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          const nextFileName = String(windowItem.data.saveAsValue ?? "").trim();
+          if (nextFileName) {
+            windowItem.data.fileName = nextFileName;
+            closeSaveAsDialog(windowItem);
+            return saveNotepadFile(windowItem, windowManager, system, nextFileName);
+          }
+
+          closeSaveAsDialog(windowItem);
+          windowManager.syncAppWindow(windowItem.id);
+          return true;
+        }
+
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeSaveAsDialog(windowItem);
+          windowManager.syncAppWindow(windowItem.id);
+          return true;
+        }
+
+        return false;
+      }
+
       const isModifier = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
 
       if (isModifier && key === "n") {
         event.preventDefault();
-        return handleMenuAction("new", windowItem, windowManager);
+        return handleMenuAction("new", windowItem, windowManager, system);
       }
 
       if (isModifier && key === "o") {
         event.preventDefault();
-        return handleMenuAction("open", windowItem, windowManager);
+        return handleMenuAction("open", windowItem, windowManager, system);
       }
 
       if (isModifier && key === "s") {
         event.preventDefault();
-        return handleMenuAction("save", windowItem, windowManager);
+        return handleMenuAction("save", windowItem, windowManager, system);
       }
 
       if (event.key === "F5") {
         event.preventDefault();
-        return handleMenuAction("time-date", windowItem, windowManager);
+        return handleMenuAction("time-date", windowItem, windowManager, system);
       }
 
       return false;

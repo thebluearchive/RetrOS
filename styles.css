@@ -2362,9 +2362,35 @@ iframe {
   margin: 0 0 8px;
 }
 
+.notepad-app__field-label {
+  display: block;
+  margin: 0 0 6px;
+}
+
+.notepad-app__field {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 2px solid;
+  border-top-color: var(--surface-shadow);
+  border-left-color: var(--surface-shadow);
+  border-right-color: var(--surface-light);
+  border-bottom-color: var(--surface-light);
+  background: #ffffff;
+  color: #111111;
+  font: inherit;
+}
+
+.notepad-app__field:focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
+}
+
 .notepad-app__dialog-actions {
   display: flex;
   justify-content: center;
+  gap: 8px;
   margin-top: 18px;
 }
 

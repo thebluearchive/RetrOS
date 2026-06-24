@@ -108,6 +108,16 @@ export const DOCUMENT_ITEMS = [
 
 const documentTitlesStorageKey = "win95-documents-titles";
 
+function getVirtualMachineDepth() {
+  const params = new URLSearchParams(window.location.search);
+  return Number.parseInt(params.get("vm") ?? "0", 10) || 0;
+}
+
+function getDocumentStorageKey() {
+  const vmDepth = getVirtualMachineDepth();
+  return vmDepth > 0 ? `${documentTitlesStorageKey}::vm-${vmDepth}` : documentTitlesStorageKey;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -118,7 +128,7 @@ function escapeHtml(value) {
 
 function loadDocumentTitles() {
   try {
-    const rawTitles = window.localStorage.getItem(documentTitlesStorageKey);
+    const rawTitles = window.localStorage.getItem(getDocumentStorageKey());
     const titles = rawTitles ? JSON.parse(rawTitles) : {};
     DOCUMENT_ITEMS.forEach((item) => {
       if (typeof titles[item.id] === "string" && titles[item.id].trim()) {
@@ -143,7 +153,7 @@ function saveDocumentTitles(system = null) {
   const titles = Object.fromEntries(getDocumentItems(system).map((item) => [item.id, item.title]));
 
   try {
-    window.localStorage.setItem(documentTitlesStorageKey, JSON.stringify(titles));
+    window.localStorage.setItem(getDocumentStorageKey(), JSON.stringify(titles));
   } catch {
     // Renames still work for the current session if storage quota is unavailable.
   }
@@ -276,6 +286,10 @@ export function getDocumentWallpaperItems(system = null) {
 }
 
 export function renderPaintFileToDataUrl(paintFile) {
+  if (typeof paintFile?.imageData === "string" && paintFile.imageData) {
+    return paintFile.imageData;
+  }
+
   const canvas = document.createElement("canvas");
   canvas.width = 320;
   canvas.height = 200;
@@ -374,6 +388,10 @@ function openSelectedDocument(windowItem, windowManager, system = null) {
     fileName: selectedItem.title,
     content: selectedItem.content,
     paintFile: selectedItem.paintFile,
+    fileRef: {
+      location: "documents",
+      itemId: selectedItem.id,
+    },
   });
   return true;
 }
