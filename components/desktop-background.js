@@ -33,8 +33,8 @@ function getCurrentBackground(system) {
   };
 }
 
-function renderDocumentChoices(currentBackground) {
-  return getDocumentWallpaperItems()
+function renderDocumentChoices(currentBackground, system = null) {
+  return getDocumentWallpaperItems(system)
     .map((item) => {
       const isSelected =
         currentBackground.type === "document-image" && currentBackground.sourceId === item.id;
@@ -107,7 +107,7 @@ export const desktopBackgroundApp = {
         <section class="background-app__section" aria-label="Document images">
           <h2 class="background-app__heading">Images in Documents</h2>
           <div class="background-app__doc-list">
-            ${renderDocumentChoices(background)}
+            ${renderDocumentChoices(background, system)}
           </div>
         </section>
 
@@ -167,7 +167,7 @@ export const desktopBackgroundApp = {
 
       const docButton = event.target.closest("[data-background-doc-id]");
       if (docButton) {
-        const doc = getDocumentWallpaperItems().find((item) => item.id === docButton.dataset.backgroundDocId);
+        const doc = getDocumentWallpaperItems(system).find((item) => item.id === docButton.dataset.backgroundDocId);
         if (!doc) {
           return false;
         }

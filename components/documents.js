@@ -106,6 +106,8 @@ export const DOCUMENT_ITEMS = [
   },
 ];
 
+const documentTitlesStorageKey = "win95-documents-titles";
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -114,12 +116,163 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
-function getDocument(itemId) {
-  return DOCUMENT_ITEMS.find((item) => item.id === itemId) ?? DOCUMENT_ITEMS[0];
+function loadDocumentTitles() {
+  try {
+    const rawTitles = window.localStorage.getItem(documentTitlesStorageKey);
+    const titles = rawTitles ? JSON.parse(rawTitles) : {};
+    DOCUMENT_ITEMS.forEach((item) => {
+      if (typeof titles[item.id] === "string" && titles[item.id].trim()) {
+        item.title = titles[item.id].trim();
+      }
+    });
+  } catch {
+    // Keep default titles if localStorage is unavailable or malformed.
+  }
 }
 
-export function getDocumentWallpaperItems() {
-  return DOCUMENT_ITEMS.filter((item) => item.paintFile);
+function getDocumentItems(system = null) {
+  return Array.isArray(system?.documentItems) ? system.documentItems : DOCUMENT_ITEMS;
+}
+
+function saveDocumentTitles(system = null) {
+  if (typeof system?.saveFileState === "function") {
+    system.saveFileState();
+    return;
+  }
+
+  const titles = Object.fromEntries(getDocumentItems(system).map((item) => [item.id, item.title]));
+
+  try {
+    window.localStorage.setItem(documentTitlesStorageKey, JSON.stringify(titles));
+  } catch {
+    // Renames still work for the current session if storage quota is unavailable.
+  }
+}
+
+function getUniqueDocumentTitle(baseTitle, excludedItemId = null, system = null) {
+  const normalizedBaseTitle = String(baseTitle ?? "").trim() || "Untitled";
+  const existingTitles = new Set(
+    getDocumentItems(system)
+      .filter((item) => item.id !== excludedItemId)
+      .map((item) => item.title.toLocaleLowerCase())
+  );
+
+  if (!existingTitles.has(normalizedBaseTitle.toLocaleLowerCase())) {
+    return normalizedBaseTitle;
+  }
+
+  let index = 2;
+  let nextTitle = `${normalizedBaseTitle} (${index})`;
+
+  while (existingTitles.has(nextTitle.toLocaleLowerCase())) {
+    index += 1;
+    nextTitle = `${normalizedBaseTitle} (${index})`;
+  }
+
+  return nextTitle;
+}
+
+function closeDocumentsContextMenu(windowItem) {
+  windowItem.data.contextMenu = null;
+}
+
+function finishDocumentRename(windowItem, itemId, rawTitle, system = null) {
+  const item = getDocument(itemId, system);
+  if (!item) {
+    windowItem.data.renamingItemId = null;
+    return;
+  }
+
+  item.title = getUniqueDocumentTitle(rawTitle, item.id, system);
+  windowItem.data.selectedItemId = item.id;
+  windowItem.data.renamingItemId = null;
+  saveDocumentTitles(system);
+}
+
+loadDocumentTitles();
+
+function getDocument(itemId, system = null) {
+  const items = getDocumentItems(system);
+  return items.find((item) => item.id === itemId) ?? items[0] ?? null;
+}
+
+function getSelectedDocumentIds(windowItem) {
+  const selectedIds = Array.isArray(windowItem.data.selectedItemIds) ? windowItem.data.selectedItemIds : [];
+  if (selectedIds.length > 0) {
+    return selectedIds;
+  }
+
+  return windowItem.data.selectedItemId ? [windowItem.data.selectedItemId] : [];
+}
+
+function setSelectedDocumentIds(windowItem, selectedIds, primaryItemId = null) {
+  const uniqueIds = Array.from(new Set(selectedIds.filter(Boolean)));
+  windowItem.data.selectedItemIds = uniqueIds;
+  windowItem.data.selectedItemId = primaryItemId ?? uniqueIds[uniqueIds.length - 1] ?? null;
+}
+
+function selectDocumentRange(windowItem, targetItemId, system = null) {
+  const items = getDocumentItems(system);
+  const anchorId = windowItem.data.selectionAnchorItemId ?? windowItem.data.selectedItemId ?? targetItemId;
+  const anchorIndex = items.findIndex((item) => item.id === anchorId);
+  const targetIndex = items.findIndex((item) => item.id === targetItemId);
+
+  if (anchorIndex < 0 || targetIndex < 0) {
+    setSelectedDocumentIds(windowItem, [targetItemId], targetItemId);
+    windowItem.data.selectionAnchorItemId = targetItemId;
+    return;
+  }
+
+  const startIndex = Math.min(anchorIndex, targetIndex);
+  const endIndex = Math.max(anchorIndex, targetIndex);
+  setSelectedDocumentIds(
+    windowItem,
+    items.slice(startIndex, endIndex + 1).map((item) => item.id),
+    targetItemId
+  );
+}
+
+function updateDocumentSelection(windowItem, targetItemId, event, system = null) {
+  if (event.shiftKey) {
+    selectDocumentRange(windowItem, targetItemId, system);
+    return;
+  }
+
+  if (event.ctrlKey || event.metaKey) {
+    const selectedIds = getSelectedDocumentIds(windowItem);
+    const isSelected = selectedIds.includes(targetItemId);
+    const nextSelectedIds = isSelected
+      ? selectedIds.filter((itemId) => itemId !== targetItemId)
+      : [...selectedIds, targetItemId];
+
+    setSelectedDocumentIds(windowItem, nextSelectedIds, targetItemId);
+    windowItem.data.selectionAnchorItemId = targetItemId;
+    return;
+  }
+
+  setSelectedDocumentIds(windowItem, [targetItemId], targetItemId);
+  windowItem.data.selectionAnchorItemId = targetItemId;
+}
+
+function normalizeDocumentSelection(windowItem, system = null) {
+  const availableIds = new Set(getDocumentItems(system).map((item) => item.id));
+  const selectedIds = getSelectedDocumentIds(windowItem).filter((itemId) => availableIds.has(itemId));
+
+  if (selectedIds.length > 0) {
+    const primaryItemId = selectedIds.includes(windowItem.data.selectedItemId)
+      ? windowItem.data.selectedItemId
+      : selectedIds[0];
+    setSelectedDocumentIds(windowItem, selectedIds, primaryItemId);
+    return;
+  }
+
+  const fallbackItem = getDocumentItems(system)[0] ?? null;
+  setSelectedDocumentIds(windowItem, fallbackItem ? [fallbackItem.id] : [], fallbackItem?.id ?? null);
+  windowItem.data.selectionAnchorItemId = fallbackItem?.id ?? null;
+}
+
+export function getDocumentWallpaperItems(system = null) {
+  return getDocumentItems(system).filter((item) => item.paintFile);
 }
 
 export function renderPaintFileToDataUrl(paintFile) {
@@ -140,27 +293,60 @@ export function renderPaintFileToDataUrl(paintFile) {
   return canvas.toDataURL("image/png");
 }
 
-function renderDocumentRows(selectedItemId) {
-  return DOCUMENT_ITEMS.map((item) => {
-    const isSelected = item.id === selectedItemId;
+function renderDocumentRows(selectedItemIds, renamingItemId = null, system = null) {
+  const selectedIds = new Set(selectedItemIds);
+
+  return getDocumentItems(system).map((item) => {
+    const isSelected = selectedIds.has(item.id);
+    const isRenaming = item.id === renamingItemId;
+    const titleMarkup = isRenaming
+      ? `
+        <input
+          class="documents-app__rename-input"
+          type="text"
+          value="${escapeHtml(item.title)}"
+          data-documents-rename-input="${item.id}"
+          aria-label="Document name"
+        >
+      `
+      : `<span>${escapeHtml(item.title)}</span>`;
 
     return `
-      <button
+      <div
         class="documents-app__row ${isSelected ? "documents-app__row--selected" : ""}"
-        type="button"
+        role="button"
+        tabindex="0"
         data-documents-item="${item.id}"
         aria-pressed="${String(isSelected)}"
       >
         <span class="documents-app__cell documents-app__cell--name">
           <img class="documents-app__item-icon" src="${item.icon}" alt="" width="18" height="18">
-          <span>${escapeHtml(item.title)}</span>
+          ${titleMarkup}
         </span>
         <span class="documents-app__cell documents-app__cell--type">${escapeHtml(item.type)}</span>
         <span class="documents-app__cell documents-app__cell--modified">${escapeHtml(item.modified)}</span>
         <span class="documents-app__cell documents-app__cell--size">${escapeHtml(item.size)}</span>
-      </button>
+      </div>
     `;
   }).join("");
+}
+
+function renderDocumentsContextMenu(windowItem) {
+  const contextMenu = windowItem.data.contextMenu;
+  if (!contextMenu) {
+    return "";
+  }
+
+  return `
+    <div
+      class="documents-app__context-menu context-menu"
+      style="left: ${contextMenu.x}px; top: ${contextMenu.y}px;"
+      data-documents-context-menu
+    >
+      <button class="context-menu__item" type="button" data-documents-context-action="open">Open</button>
+      <button class="context-menu__item" type="button" data-documents-context-action="rename">Rename</button>
+    </div>
+  `;
 }
 
 function renderPreview(item) {
@@ -177,8 +363,8 @@ function renderPreview(item) {
   `;
 }
 
-function openSelectedDocument(windowItem, windowManager) {
-  const selectedItem = getDocument(windowItem.data.selectedItemId);
+function openSelectedDocument(windowItem, windowManager, system = null) {
+  const selectedItem = getDocument(windowItem.data.selectedItemId, system);
 
   if (!selectedItem?.appId || !windowManager.hasApp(selectedItem.appId)) {
     return false;
@@ -209,14 +395,25 @@ export const documentsApp = {
     y: 101,
   },
   createState() {
+    const initialSelectedId = DOCUMENT_ITEMS[0]?.id ?? null;
+
     return {
-      selectedItemId: DOCUMENT_ITEMS[0].id,
+      selectedItemId: initialSelectedId,
+      selectedItemIds: initialSelectedId ? [initialSelectedId] : [],
+      selectionAnchorItemId: initialSelectedId,
       viewMode: "preview",
+      renamingItemId: null,
+      contextMenu: null,
     };
   },
-  render(windowItem) {
-    const selectedItem = getDocument(windowItem.data.selectedItemId);
+  render(windowItem, system) {
+    normalizeDocumentSelection(windowItem, system);
+    const items = getDocumentItems(system);
+    const selectedItem = getDocument(windowItem.data.selectedItemId, system);
+    const selectedIds = getSelectedDocumentIds(windowItem);
     const isPreview = windowItem.data.viewMode !== "details";
+    const selectedTitle = selectedItem?.title ?? "My Documents";
+    const selectedCount = selectedIds.length;
 
     return `
       <div class="documents-app" data-documents-window="${windowItem.id}">
@@ -237,7 +434,7 @@ export const documentsApp = {
         </div>
         <div class="documents-app__address">
           <span class="documents-app__address-label">Address</span>
-          <span class="documents-app__address-value">C:\\My Documents\\${escapeHtml(selectedItem.title)}</span>
+          <span class="documents-app__address-value">C:\\My Documents\\${escapeHtml(selectedTitle)}</span>
         </div>
         <div class="documents-app__content ${isPreview ? "" : "documents-app__content--details"}">
           <section class="documents-app__browser" aria-label="Documents list">
@@ -248,30 +445,37 @@ export const documentsApp = {
               <span class="documents-app__cell documents-app__cell--size">Size</span>
             </div>
             <div class="documents-app__list" data-documents-list>
-              ${renderDocumentRows(windowItem.data.selectedItemId)}
+              ${renderDocumentRows(selectedIds, windowItem.data.renamingItemId, system)}
             </div>
           </section>
           <aside class="documents-app__preview" data-documents-preview aria-label="Document preview">
-            ${renderPreview(selectedItem)}
+            ${selectedItem ? renderPreview(selectedItem) : ""}
           </aside>
         </div>
         <div class="documents-app__status" data-documents-status>
-          ${DOCUMENT_ITEMS.length} object${DOCUMENT_ITEMS.length === 1 ? "" : "s"} selected: ${escapeHtml(selectedItem.title)}
+          ${items.length} object${items.length === 1 ? "" : "s"}; ${selectedCount} selected${selectedCount === 1 ? `: ${escapeHtml(selectedTitle)}` : ""}
         </div>
+        ${renderDocumentsContextMenu(windowItem)}
       </div>
     `;
   },
-  sync(element, windowItem) {
+  sync(element, windowItem, windowManager, system) {
     const root = element.querySelector(`[data-documents-window="${windowItem.id}"]`);
     if (!root) {
       return;
     }
 
-    const selectedItem = getDocument(windowItem.data.selectedItemId);
+    normalizeDocumentSelection(windowItem, system);
+    const items = getDocumentItems(system);
+    const selectedItem = getDocument(windowItem.data.selectedItemId, system);
+    if (!selectedItem) {
+      return;
+    }
+    const selectedIds = getSelectedDocumentIds(windowItem);
     const isPreview = windowItem.data.viewMode !== "details";
     const list = root.querySelector("[data-documents-list]");
     if (list) {
-      list.innerHTML = renderDocumentRows(selectedItem.id);
+      list.innerHTML = renderDocumentRows(selectedIds, windowItem.data.renamingItemId, system);
     }
 
     const preview = root.querySelector("[data-documents-preview]");
@@ -300,15 +504,105 @@ export const documentsApp = {
 
     const status = root.querySelector("[data-documents-status]");
     if (status) {
-      status.textContent = `${DOCUMENT_ITEMS.length} objects selected: ${selectedItem.title}`;
+      status.textContent =
+        `${items.length} objects; ${selectedIds.length} selected` +
+        (selectedIds.length === 1 ? `: ${selectedItem.title}` : "");
+    }
+
+    root.querySelector("[data-documents-context-menu]")?.remove();
+    root.insertAdjacentHTML("beforeend", renderDocumentsContextMenu(windowItem));
+
+    if (windowItem.data.renamingItemId) {
+      window.requestAnimationFrame(() => {
+        const input = root.querySelector(
+          `[data-documents-rename-input="${windowItem.data.renamingItemId}"]`
+        );
+        input?.focus();
+        input?.select();
+      });
     }
   },
-  handleEvent({ type, event, windowItem, windowManager }) {
+  handleEvent({ type, event, windowItem, windowManager, system }) {
+    if (type === "mousedown") {
+      if (event.button !== 0 || event.target.closest("[data-documents-rename-input]")) {
+        return false;
+      }
+
+      const itemRow = event.target.closest("[data-documents-item]");
+      if (!itemRow || typeof system?.startDocumentDrag !== "function") {
+        return false;
+      }
+
+      closeDocumentsContextMenu(windowItem);
+      if (!getSelectedDocumentIds(windowItem).includes(itemRow.dataset.documentsItem)) {
+        updateDocumentSelection(windowItem, itemRow.dataset.documentsItem, event, system);
+      }
+      system.startDocumentDrag(getSelectedDocumentIds(windowItem), event);
+      windowManager.syncAppWindow(windowItem.id);
+      return true;
+    }
+
+    if (type === "contextmenu") {
+      const itemRow = event.target.closest("[data-documents-item]");
+      if (!itemRow) {
+        event.preventDefault();
+        closeDocumentsContextMenu(windowItem);
+        windowManager.syncAppWindow(windowItem.id);
+        return true;
+      }
+
+      event.preventDefault();
+      const root = event.target.closest(`[data-documents-window="${windowItem.id}"]`);
+      const rootRect = root.getBoundingClientRect();
+      if (!getSelectedDocumentIds(windowItem).includes(itemRow.dataset.documentsItem)) {
+        setSelectedDocumentIds(windowItem, [itemRow.dataset.documentsItem], itemRow.dataset.documentsItem);
+        windowItem.data.selectionAnchorItemId = itemRow.dataset.documentsItem;
+      }
+      windowItem.data.contextMenu = {
+        itemId: itemRow.dataset.documentsItem,
+        x: Math.max(4, event.clientX - rootRect.left),
+        y: Math.max(4, event.clientY - rootRect.top),
+      };
+      windowManager.syncAppWindow(windowItem.id);
+      return true;
+    }
+
     if (type === "click") {
+      if (typeof system?.consumeDocumentDragSuppression === "function" && system.consumeDocumentDragSuppression()) {
+        return true;
+      }
+
+      const contextAction = event.target.closest("[data-documents-context-action]");
+      if (contextAction) {
+        const contextItemId = windowItem.data.contextMenu?.itemId;
+        if (contextItemId && !getSelectedDocumentIds(windowItem).includes(contextItemId)) {
+          setSelectedDocumentIds(windowItem, [contextItemId], contextItemId);
+        }
+
+        if (contextAction.dataset.documentsContextAction === "open") {
+          closeDocumentsContextMenu(windowItem);
+          windowManager.syncAppWindow(windowItem.id);
+          return openSelectedDocument(windowItem, windowManager, system);
+        }
+
+        if (contextAction.dataset.documentsContextAction === "rename") {
+          windowItem.data.renamingItemId = windowItem.data.selectedItemId;
+          closeDocumentsContextMenu(windowItem);
+          windowManager.syncAppWindow(windowItem.id);
+          return true;
+        }
+      }
+
+      if (event.target.closest("[data-documents-rename-input]")) {
+        return true;
+      }
+
+      closeDocumentsContextMenu(windowItem);
+
       const actionButton = event.target.closest("[data-documents-action]");
       if (actionButton) {
         if (actionButton.dataset.documentsAction === "open") {
-          openSelectedDocument(windowItem, windowManager);
+          openSelectedDocument(windowItem, windowManager, system);
           return true;
         }
 
@@ -324,29 +618,62 @@ export const documentsApp = {
         return false;
       }
 
-      windowItem.data.selectedItemId = itemButton.dataset.documentsItem;
+      updateDocumentSelection(windowItem, itemButton.dataset.documentsItem, event, system);
       windowManager.syncAppWindow(windowItem.id);
-      return openSelectedDocument(windowItem, windowManager);
+      return true;
     }
 
     if (type === "dblclick") {
+      if (event.target.closest("[data-documents-rename-input]")) {
+        return true;
+      }
+
       const itemButton = event.target.closest("[data-documents-item]");
       if (!itemButton) {
         return false;
       }
 
-      windowItem.data.selectedItemId = itemButton.dataset.documentsItem;
-      openSelectedDocument(windowItem, windowManager);
+      setSelectedDocumentIds(windowItem, [itemButton.dataset.documentsItem], itemButton.dataset.documentsItem);
+      windowItem.data.selectionAnchorItemId = itemButton.dataset.documentsItem;
+      openSelectedDocument(windowItem, windowManager, system);
       return true;
     }
 
     if (type === "keydown") {
+      const renameInput = event.target.closest("[data-documents-rename-input]");
+      if (renameInput) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          finishDocumentRename(windowItem, renameInput.dataset.documentsRenameInput, renameInput.value, system);
+          windowManager.syncAppWindow(windowItem.id);
+        }
+
+        if (event.key === "Escape") {
+          event.preventDefault();
+          windowItem.data.renamingItemId = null;
+          windowManager.syncAppWindow(windowItem.id);
+        }
+
+        return true;
+      }
+
       if (event.key !== "Enter") {
         return false;
       }
 
       event.preventDefault();
-      return openSelectedDocument(windowItem, windowManager);
+      return openSelectedDocument(windowItem, windowManager, system);
+    }
+
+    if (type === "focusout") {
+      const renameInput = event.target.closest("[data-documents-rename-input]");
+      if (!renameInput || windowItem.data.renamingItemId !== renameInput.dataset.documentsRenameInput) {
+        return false;
+      }
+
+      finishDocumentRename(windowItem, renameInput.dataset.documentsRenameInput, renameInput.value, system);
+      windowManager.syncAppWindow(windowItem.id);
+      return true;
     }
 
     return false;

@@ -18,12 +18,15 @@ export class WindowManager {
     this.resizeState = null;
 
     this.windowLayer.addEventListener("mousedown", this.handleWindowLayerMouseDown.bind(this));
+    this.windowLayer.addEventListener("dragstart", this.handleWindowLayerDragStart.bind(this));
     this.windowLayer.addEventListener("click", this.handleWindowLayerClick.bind(this));
     this.windowLayer.addEventListener("mouseover", this.handleWindowLayerMouseOver.bind(this));
+    this.windowLayer.addEventListener("contextmenu", this.handleWindowLayerContextMenu.bind(this));
     this.windowLayer.addEventListener("dblclick", this.handleWindowLayerDoubleClick.bind(this));
     this.windowLayer.addEventListener("input", this.handleWindowLayerInput.bind(this));
     this.windowLayer.addEventListener("change", this.handleWindowLayerChange.bind(this));
     this.windowLayer.addEventListener("keydown", this.handleWindowLayerKeyDown.bind(this));
+    this.windowLayer.addEventListener("focusout", this.handleWindowLayerFocusOut.bind(this));
     this.windowLayer.addEventListener("submit", this.handleWindowLayerSubmit.bind(this), true);
     this.taskbarApps.addEventListener("click", this.handleTaskbarClick.bind(this));
   }
@@ -351,8 +354,19 @@ export class WindowManager {
     }
   }
 
+  handleWindowLayerDragStart(event) {
+    event.preventDefault();
+  }
+
   handleWindowLayerMouseOver(event) {
     this.dispatchAppEvent("mouseover", event);
+  }
+
+  async handleWindowLayerContextMenu(event) {
+    if (await this.dispatchAppEvent("contextmenu", event)) {
+      event.stopPropagation();
+      return;
+    }
   }
 
   async handleWindowLayerDoubleClick(event) {
@@ -390,6 +404,10 @@ export class WindowManager {
     await this.dispatchAppEvent("keydown", event);
   }
 
+  async handleWindowLayerFocusOut(event) {
+    await this.dispatchAppEvent("focusout", event);
+  }
+
   handleTaskbarClick(event) {
     const button = event.target.closest("[data-window-id]");
     if (!button) {
@@ -411,6 +429,7 @@ export class WindowManager {
     }
 
     if (await this.dispatchAppEvent("mousedown", event)) {
+      event.stopPropagation();
       return;
     }
 

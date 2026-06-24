@@ -1,4 +1,5 @@
 import { apps } from "./apps.js";
+import { DOCUMENT_ITEMS } from "./components/documents.js";
 import { WindowManager } from "./windows.js";
 
 const clockElement = document.getElementById("clock");
@@ -25,6 +26,8 @@ const desktopGrid = {
 };
 let shutdownTimeoutIds = [];
 const desktopSelectionElement = document.createElement("div");
+const documentDragProxyElement = document.createElement("div");
+const desktopDragProxyElement = document.createElement("div");
 let desktopSelectionState = null;
 let desktopDragState = null;
 let desktopContextMenuState = {
@@ -35,6 +38,7 @@ let desktopContextMenuState = {
 };
 let suppressDesktopIconClick = false;
 let renamingDesktopItemId = null;
+let documentDragState = null;
 
 const initialDesktopItems = [
   {
@@ -91,15 +95,18 @@ const initialDesktopItems = [
 
 const system = {
   desktopItems: initialDesktopItems.map((item) => ({ ...item })),
+  documentItems: DOCUMENT_ITEMS.map((item) => ({ ...item })),
   recycleBinItems: [],
   desktopBackground: loadDesktopBackground(),
   nextDesktopFileId: 1,
+  shouldSuppressDocumentClick: false,
   loadDesktopFiles() {
     const state = loadDesktopFilesState();
     this.desktopItems = [
       ...initialDesktopItems.map((item) => ({ ...item })),
       ...state.desktopItems,
     ];
+    this.documentItems = state.documentItems;
     this.recycleBinItems = state.recycleBinItems;
     this.nextDesktopFileId = state.nextDesktopFileId;
   },
@@ -282,6 +289,27 @@ const system = {
     saveDesktopBackground(this.desktopBackground);
     applyDesktopBackground(this.desktopBackground);
   },
+  saveFileState() {
+    saveDesktopFilesState();
+  },
+  startDocumentDrag(documentIds, event) {
+    documentDragState = {
+      documentIds: Array.isArray(documentIds) ? documentIds : [documentIds],
+      startPointerX: event.clientX,
+      startPointerY: event.clientY,
+      currentPointerX: event.clientX,
+      currentPointerY: event.clientY,
+      didMove: false,
+    };
+  },
+  consumeDocumentDragSuppression() {
+    if (!this.shouldSuppressDocumentClick) {
+      return false;
+    }
+
+    this.shouldSuppressDocumentClick = false;
+    return true;
+  },
   createDesktopFile(fileType, preferredSlot = null) {
     const fileDefinition = getDesktopFileDefinition(fileType);
     if (!fileDefinition) {
@@ -307,11 +335,103 @@ const system = {
     renderDesktopIcons();
     return item;
   },
+  getDocumentItem(itemId) {
+    return this.documentItems.find((item) => item.id === itemId) ?? null;
+  },
+  moveDocumentToDesktop(documentId, preferredSlot = null) {
+    const documentItem = this.getDocumentItem(documentId);
+    if (!documentItem) {
+      return null;
+    }
+
+    this.documentItems = this.documentItems.filter((item) => item.id !== documentId);
+    const item = {
+      id: `desktop-document-${documentItem.id}`,
+      appId: documentItem.appId,
+      title: getUniqueDesktopTitle(documentItem.title),
+      icon: documentItem.icon,
+      order: getNextDesktopItemOrder(),
+      documentId: documentItem.id,
+      fileType: documentItem.paintFile ? "paint" : "note",
+      content: documentItem.content,
+      paintFile: documentItem.paintFile,
+      documentItem,
+      ...this.getNextAvailableDesktopSlot(preferredSlot),
+    };
+
+    this.desktopItems.push(item);
+    saveDesktopFilesState();
+    renderDesktopIcons();
+    windowManager.syncWindowsByAppId("documents");
+    return item;
+  },
+  moveDocumentsToDesktop(documentIds, preferredSlot = null) {
+    let nextSlot = preferredSlot;
+    const movedItems = [];
+
+    documentIds.forEach((documentId) => {
+      const item = this.moveDocumentToDesktop(documentId, nextSlot);
+      if (!item) {
+        return;
+      }
+
+      movedItems.push(item);
+      nextSlot = this.getNextAvailableDesktopSlot({
+        gridColumn: item.gridColumn,
+        gridRow: item.gridRow + 1,
+      });
+    });
+
+    return movedItems;
+  },
+  moveDesktopFileToDocuments(itemId) {
+    const item = this.getDesktopItem(itemId);
+    if (!item || item.isProtected || !item.appId || !["notepad", "paint"].includes(item.appId)) {
+      return false;
+    }
+
+    this.desktopItems = this.desktopItems.filter((desktopItem) => desktopItem.id !== itemId);
+    const documentItem = item.documentItem
+      ? { ...item.documentItem, title: item.title }
+      : {
+          id: item.documentId ?? `document-${item.id}`,
+          title: item.title,
+          type: item.appId === "paint" ? "Bitmap Image" : "Text Document",
+          size: "1 KB",
+          modified: new Date().toLocaleDateString("en-US", {
+            month: "2-digit",
+            day: "2-digit",
+            year: "2-digit",
+          }),
+          icon: item.icon,
+          description: item.appId === "paint" ? "A paint document moved from the desktop." : "A note moved from the desktop.",
+          content: item.content ?? "",
+          preview: item.appId === "paint" ? "Bitmap image" : (item.content || "Empty note"),
+          actionLabel: item.appId === "paint" ? "Open in Paint" : "Open in Notepad",
+          appId: item.appId,
+          paintFile: item.paintFile ?? null,
+        };
+
+    documentItem.title = getUniqueDocumentSystemTitle(documentItem.title, documentItem.id);
+    this.documentItems = [...this.documentItems, documentItem];
+    saveDesktopFilesState();
+    renderDesktopIcons();
+    windowManager.syncWindowsByAppId("documents");
+    return true;
+  },
 };
 
 desktopSelectionElement.className = "desktop-selection desktop-selection--hidden";
 desktopSelectionElement.setAttribute("aria-hidden", "true");
 desktopElement.insertBefore(desktopSelectionElement, windowLayerElement);
+
+documentDragProxyElement.className = "document-drag-proxy document-drag-proxy--hidden";
+documentDragProxyElement.setAttribute("aria-hidden", "true");
+desktopElement.appendChild(documentDragProxyElement);
+
+desktopDragProxyElement.className = "desktop-drag-proxy desktop-drag-proxy--hidden";
+desktopDragProxyElement.setAttribute("aria-hidden", "true");
+desktopElement.appendChild(desktopDragProxyElement);
 
 const windowManager = new WindowManager({
   apps,
@@ -376,7 +496,10 @@ function saveDesktopBackground(background) {
 }
 
 function isUserDesktopFile(item) {
-  return typeof item?.id === "string" && item.id.startsWith("desktop-file-");
+  return (
+    typeof item?.id === "string" &&
+    (item.id.startsWith("desktop-file-") || item.id.startsWith("desktop-document-"))
+  );
 }
 
 function serializeDesktopFile(item) {
@@ -389,6 +512,8 @@ function serializeDesktopFile(item) {
     fileType: item.fileType,
     content: item.content ?? "",
     paintFile: item.paintFile ?? null,
+    documentId: item.documentId ?? null,
+    documentItem: item.documentItem ? serializeDocumentItem(item.documentItem) : null,
     gridColumn: item.gridColumn,
     gridRow: item.gridRow,
     deletedAt: item.deletedAt ?? null,
@@ -414,9 +539,58 @@ function normalizeDesktopFile(rawItem) {
     fileType: rawItem.fileType,
     content: typeof rawItem.content === "string" ? rawItem.content : fileDefinition.content,
     paintFile: rawItem.paintFile ?? fileDefinition.paintFile,
+    documentId: typeof rawItem.documentId === "string" ? rawItem.documentId : null,
+    documentItem: rawItem.documentItem ? normalizeDocumentItem(rawItem.documentItem) : null,
     gridColumn: Number.isInteger(rawItem.gridColumn) ? rawItem.gridColumn : null,
     gridRow: Number.isInteger(rawItem.gridRow) ? rawItem.gridRow : null,
     deletedAt: Number.isFinite(rawItem.deletedAt) ? rawItem.deletedAt : undefined,
+  };
+}
+
+function serializeDocumentItem(item) {
+  return {
+    id: item.id,
+    title: item.title,
+    type: item.type,
+    size: item.size,
+    modified: item.modified,
+    icon: item.icon,
+    description: item.description,
+    content: item.content ?? "",
+    preview: item.preview ?? "",
+    actionLabel: item.actionLabel,
+    appId: item.appId,
+    paintFile: item.paintFile ?? null,
+  };
+}
+
+function normalizeDocumentItem(rawItem) {
+  if (!rawItem || typeof rawItem.id !== "string") {
+    return null;
+  }
+
+  const isPaint = rawItem.appId === "paint" || rawItem.paintFile;
+  return {
+    id: rawItem.id,
+    title: String(rawItem.title ?? "").trim() || "Untitled",
+    type: typeof rawItem.type === "string" ? rawItem.type : isPaint ? "Bitmap Image" : "Text Document",
+    size: typeof rawItem.size === "string" ? rawItem.size : "1 KB",
+    modified: typeof rawItem.modified === "string" ? rawItem.modified : "06/23/26",
+    icon: typeof rawItem.icon === "string"
+      ? rawItem.icon
+      : isPaint
+        ? "./res/png/paint_file-0.png"
+        : "./res/png/notepad_file-0.png",
+    description: typeof rawItem.description === "string" ? rawItem.description : "A document.",
+    content: typeof rawItem.content === "string" ? rawItem.content : "",
+    preview: typeof rawItem.preview === "string" ? rawItem.preview : "",
+    actionLabel: typeof rawItem.actionLabel === "string"
+      ? rawItem.actionLabel
+      : isPaint
+        ? "Open in Paint"
+        : "Open in Notepad",
+    appId: isPaint ? "paint" : "notepad",
+    paintFile: rawItem.paintFile ?? null,
   };
 }
 
@@ -435,6 +609,9 @@ function loadDesktopFilesState() {
     const recycleBinItems = Array.isArray(parsedState.recycleBinItems)
       ? parsedState.recycleBinItems.map(normalizeDesktopFile).filter(Boolean)
       : [];
+    const documentItems = Array.isArray(parsedState.documentItems)
+      ? parsedState.documentItems.map(normalizeDocumentItem).filter(Boolean)
+      : DOCUMENT_ITEMS.map((item) => ({ ...item }));
     const maxFileId = [...desktopItems, ...recycleBinItems].reduce((maxId, item) => {
       return Math.max(maxId, getDesktopFileNumericId(item));
     }, 0);
@@ -445,12 +622,14 @@ function loadDesktopFilesState() {
 
     return {
       desktopItems,
+      documentItems,
       recycleBinItems,
       nextDesktopFileId,
     };
   } catch {
     return {
       desktopItems: [],
+      documentItems: DOCUMENT_ITEMS.map((item) => ({ ...item })),
       recycleBinItems: [],
       nextDesktopFileId: 1,
     };
@@ -461,6 +640,7 @@ function saveDesktopFilesState() {
   const state = {
     nextDesktopFileId: system.nextDesktopFileId,
     desktopItems: system.desktopItems.filter(isUserDesktopFile).map(serializeDesktopFile),
+    documentItems: system.documentItems.map(serializeDocumentItem),
     recycleBinItems: system.recycleBinItems.filter(isUserDesktopFile).map(serializeDesktopFile),
   };
 
@@ -543,6 +723,29 @@ function getUniqueDesktopTitle(baseTitle, excludedItemId = null) {
   return nextTitle;
 }
 
+function getUniqueDocumentSystemTitle(baseTitle, excludedItemId = null) {
+  const normalizedBaseTitle = String(baseTitle ?? "").trim() || "Untitled";
+  const existingTitles = new Set(
+    system.documentItems
+      .filter((item) => item.id !== excludedItemId)
+      .map((item) => item.title.toLocaleLowerCase())
+  );
+
+  if (!existingTitles.has(normalizedBaseTitle.toLocaleLowerCase())) {
+    return normalizedBaseTitle;
+  }
+
+  let index = 2;
+  let nextTitle = `${normalizedBaseTitle} (${index})`;
+
+  while (existingTitles.has(nextTitle.toLocaleLowerCase())) {
+    index += 1;
+    nextTitle = `${normalizedBaseTitle} (${index})`;
+  }
+
+  return nextTitle;
+}
+
 function getDesktopSlotFromClientPoint(clientX, clientY) {
   const desktopRect = desktopElement.getBoundingClientRect();
   return getNearestDesktopSlot(clientX - desktopRect.left, clientY - desktopRect.top);
@@ -572,6 +775,68 @@ function finishDesktopItemRename(itemId, rawTitle) {
   renamingDesktopItemId = null;
   saveDesktopFilesState();
   renderDesktopIcons();
+}
+
+function setDocumentDragProxyPosition(clientX, clientY) {
+  documentDragProxyElement.style.transform = `translate(${clientX + 10}px, ${clientY + 10}px)`;
+}
+
+function showDocumentDragProxy(documentIds, clientX, clientY) {
+  const ids = Array.isArray(documentIds) ? documentIds : [documentIds];
+  const item = system.getDocumentItem(ids[0]);
+  if (!item) {
+    return;
+  }
+  const label = ids.length > 1 ? `${ids.length} items` : item.title;
+
+  documentDragProxyElement.innerHTML = `
+    <img class="document-drag-proxy__image" src="${item.icon}" alt="" width="32" height="32" draggable="false">
+    <span class="document-drag-proxy__label">${escapeHtml(label)}</span>
+  `;
+  setDocumentDragProxyPosition(clientX, clientY);
+  documentDragProxyElement.classList.remove("document-drag-proxy--hidden");
+}
+
+function hideDocumentDragProxy() {
+  documentDragProxyElement.classList.add("document-drag-proxy--hidden");
+  documentDragProxyElement.innerHTML = "";
+}
+
+function showDesktopDragProxy(items) {
+  desktopDragProxyElement.innerHTML = items
+    .map((dragItem) => {
+      const item = system.getDesktopItem(dragItem.itemId);
+      if (!item) {
+        return "";
+      }
+
+      const icon = item.appId === "recycle-bin" ? system.getRecycleBinIcon() : item.icon;
+
+      return `
+        <div
+          class="desktop-drag-proxy__icon"
+          data-desktop-drag-proxy-item="${item.id}"
+          style="left: ${dragItem.left}px; top: ${dragItem.top}px;"
+        >
+          <img class="desktop-drag-proxy__image" src="${icon}" alt="" width="32" height="32" draggable="false">
+          <span class="desktop-drag-proxy__label">${escapeHtml(item.title)}</span>
+        </div>
+      `;
+    })
+    .join("");
+
+  desktopDragProxyElement.classList.remove("desktop-drag-proxy--hidden");
+}
+
+function setDesktopDragProxyPosition(deltaX, deltaY) {
+  desktopDragProxyElement.querySelectorAll("[data-desktop-drag-proxy-item]").forEach((proxyItem) => {
+    proxyItem.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+  });
+}
+
+function hideDesktopDragProxy() {
+  desktopDragProxyElement.classList.add("desktop-drag-proxy--hidden");
+  desktopDragProxyElement.innerHTML = "";
 }
 
 function setStartMenuState(isOpen) {
@@ -767,6 +1032,25 @@ function isPointerOverElement(clientX, clientY, element) {
 
   const rect = element.getBoundingClientRect();
   return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+}
+
+function getDocumentsDropTarget(clientX, clientY) {
+  return (
+    Array.from(windowLayerElement.querySelectorAll("[data-documents-list]")).find((element) => {
+      return isPointerOverElement(clientX, clientY, element);
+    }) ?? null
+  );
+}
+
+function isPointOverEmptyDesktop(clientX, clientY) {
+  return (
+    isPointerOverElement(clientX, clientY, desktopElement) &&
+    !document.elementFromPoint(clientX, clientY)?.closest(".window, .taskbar, .start-menu, .context-menu")
+  );
+}
+
+function canMoveDesktopItemToDocuments(item) {
+  return Boolean(item && isUserDesktopFile(item) && ["notepad", "paint"].includes(item.appId));
 }
 
 function deleteSelectedDesktopItems() {
@@ -1065,6 +1349,8 @@ desktopIconsElement.addEventListener("mousedown", (event) => {
     minDeltaY: desktopGrid.startY - dragBounds.minTop,
     maxDeltaX: desktopGrid.startX + (getDesktopGridLimits().columns - 1) * desktopGrid.stepX - dragBounds.maxLeft,
     maxDeltaY: desktopGrid.startY + (getDesktopGridLimits().rows - 1) * desktopGrid.stepY - dragBounds.maxTop,
+    currentDeltaX: 0,
+    currentDeltaY: 0,
     didMove: false,
     isOverRecycleBin: false,
   };
@@ -1237,14 +1523,34 @@ desktopElement.addEventListener("contextmenu", (event) => {
 });
 
 document.addEventListener("mousemove", (event) => {
+  if (documentDragState) {
+    const deltaX = event.clientX - documentDragState.startPointerX;
+    const deltaY = event.clientY - documentDragState.startPointerY;
+    documentDragState.currentPointerX = event.clientX;
+    documentDragState.currentPointerY = event.clientY;
+
+    if (!documentDragState.didMove && Math.hypot(deltaX, deltaY) >= 4) {
+      documentDragState.didMove = true;
+      showDocumentDragProxy(documentDragState.documentIds, event.clientX, event.clientY);
+    }
+
+    if (documentDragState.didMove) {
+      setDocumentDragProxyPosition(event.clientX, event.clientY);
+      event.preventDefault();
+    }
+
+    return;
+  }
+
   if (desktopDragState) {
     const deltaX = event.clientX - desktopDragState.startPointerX;
     const deltaY = event.clientY - desktopDragState.startPointerY;
 
     if (!desktopDragState.didMove && Math.hypot(deltaX, deltaY) >= 4) {
       desktopDragState.didMove = true;
+      showDesktopDragProxy(desktopDragState.items);
       desktopDragState.itemIds.forEach((itemId) => {
-        getDesktopItemElement(itemId)?.classList.add("desktop-icon--dragging");
+        getDesktopItemElement(itemId)?.classList.add("desktop-icon--drag-source");
       });
     }
 
@@ -1254,16 +1560,10 @@ document.addEventListener("mousemove", (event) => {
 
     const nextDeltaX = clamp(deltaX, desktopDragState.minDeltaX, desktopDragState.maxDeltaX);
     const nextDeltaY = clamp(deltaY, desktopDragState.minDeltaY, desktopDragState.maxDeltaY);
+    desktopDragState.currentDeltaX = nextDeltaX;
+    desktopDragState.currentDeltaY = nextDeltaY;
 
-    desktopDragState.items.forEach((dragItem) => {
-      const icon = getDesktopItemElement(dragItem.itemId);
-      if (!icon) {
-        return;
-      }
-
-      icon.style.left = `${dragItem.left + nextDeltaX}px`;
-      icon.style.top = `${dragItem.top + nextDeltaY}px`;
-    });
+    setDesktopDragProxyPosition(nextDeltaX, nextDeltaY);
 
     const recycleBinElement = getRecycleBinDropTarget();
     desktopDragState.isOverRecycleBin =
@@ -1297,21 +1597,46 @@ document.addEventListener("mousemove", (event) => {
 });
 
 document.addEventListener("mouseup", (event) => {
+  if (documentDragState) {
+    if (documentDragState.didMove) {
+      system.shouldSuppressDocumentClick = true;
+
+      if (isPointOverEmptyDesktop(event.clientX, event.clientY)) {
+        system.moveDocumentsToDesktop(
+          documentDragState.documentIds,
+          getDesktopSlotFromClientPoint(event.clientX, event.clientY)
+        );
+      }
+    }
+
+    documentDragState = null;
+    hideDocumentDragProxy();
+    return;
+  }
+
   if (desktopDragState) {
     const primaryIcon = getDesktopItemElement(desktopDragState.primaryItemId);
 
     if (primaryIcon && desktopDragState.didMove) {
+      const documentsDropTarget = getDocumentsDropTarget(event.clientX, event.clientY);
       const recycleBinElement = getRecycleBinDropTarget();
       const isOverRecycleBin =
         !desktopDragState.itemIds.includes(recycleBinElement?.dataset.desktopItemId) &&
         (desktopDragState.isOverRecycleBin ||
           isPointerOverElement(event.clientX, event.clientY, recycleBinElement));
 
-      if (isOverRecycleBin) {
+      if (documentsDropTarget) {
+        desktopDragState.itemIds
+          .map((itemId) => system.getDesktopItem(itemId))
+          .filter(canMoveDesktopItemToDocuments)
+          .forEach((item) => {
+            system.moveDesktopFileToDocuments(item.id);
+          });
+      } else if (isOverRecycleBin) {
         system.deleteDesktopItems(desktopDragState.itemIds);
       } else {
-        const nextLeft = parseFloat(primaryIcon.style.left) || desktopDragState.startLeft;
-        const nextTop = parseFloat(primaryIcon.style.top) || desktopDragState.startTop;
+        const nextLeft = desktopDragState.startLeft + desktopDragState.currentDeltaX;
+        const nextTop = desktopDragState.startTop + desktopDragState.currentDeltaY;
         system.moveDesktopItems(desktopDragState.itemIds, desktopDragState.primaryItemId, {
           left: nextLeft,
           top: nextTop,
@@ -1322,9 +1647,10 @@ document.addEventListener("mouseup", (event) => {
     }
 
     clearRecycleBinDropState();
+    hideDesktopDragProxy();
 
     desktopDragState.itemIds.forEach((itemId) => {
-      getDesktopItemElement(itemId)?.classList.remove("desktop-icon--dragging");
+      getDesktopItemElement(itemId)?.classList.remove("desktop-icon--drag-source");
     });
 
     desktopDragState = null;
