@@ -50,6 +50,10 @@ body {
   cursor: var(--cursor-default);
 }
 
+body.is-starting {
+  background: #000000;
+}
+
 body *,
 button,
 input,
@@ -138,9 +142,65 @@ iframe {
 .window__controls,
 .window__resize-handle,
 .taskbar,
-.shutdown-screen {
+.shutdown-screen,
+.startup-screen {
   -webkit-user-select: none;
   user-select: none;
+}
+
+.startup-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at center, rgba(0, 0, 128, 0.28) 0, rgba(0, 0, 128, 0.12) 26%, transparent 52%),
+    #000000;
+  color: #c0c0c0;
+}
+
+.startup-screen--hidden {
+  display: none;
+}
+
+.startup-screen__content {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  border: 2px solid;
+  border-top-color: var(--surface-light);
+  border-left-color: var(--surface-light);
+  border-right-color: var(--surface-shadow);
+  border-bottom-color: var(--surface-shadow);
+  background: #000000;
+  box-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #c0c0c0;
+}
+
+.startup-screen__logo {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.startup-screen__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.startup-screen__title {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.startup-screen__status {
+  color: #c0c0c0;
+  white-space: nowrap;
 }
 
 .desktop-icon {

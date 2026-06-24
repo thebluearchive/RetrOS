@@ -11,7 +11,9 @@ const startMenu = document.getElementById("start-menu");
 const desktopIconsElement = document.querySelector(".desktop-icons");
 const desktopContextMenuElement = document.getElementById("desktop-context-menu");
 const shutdownScreenElement = document.getElementById("shutdown-screen");
+const startupScreenElement = document.getElementById("startup-screen");
 const shutdownSequenceDuration = 2000;
+const minimumStartupDuration = 2000;
 const desktopBackgroundStorageKey = "win95-desktop-background";
 const desktopFilesStorageKey = "win95-desktop-files";
 const documentTitlesStorageKey = "win95-documents-titles";
@@ -41,6 +43,23 @@ let desktopContextMenuState = {
 let suppressDesktopIconClick = false;
 let renamingDesktopItemId = null;
 let documentDragState = null;
+const startupStartedAt = Date.now();
+
+function setStartupScreenState(isVisible) {
+  if (!startupScreenElement) {
+    return;
+  }
+
+  startupScreenElement.classList.toggle("startup-screen--hidden", !isVisible);
+  startupScreenElement.setAttribute("aria-hidden", String(!isVisible));
+  document.body.classList.toggle("is-starting", isVisible);
+}
+
+function finishStartupScreen() {
+  window.setTimeout(() => {
+    setStartupScreenState(false);
+  }, 120);
+}
 
 function getVirtualMachineDepth() {
   const params = new URLSearchParams(window.location.search);
@@ -1994,3 +2013,17 @@ setShuttingDownState(false);
 setShutdownScreenState(false);
 windowManager.render();
 setInterval(updateClock, 1000);
+
+const completeStartup = () => {
+  const elapsed = Date.now() - startupStartedAt;
+  const remaining = Math.max(0, minimumStartupDuration - elapsed);
+  window.setTimeout(() => {
+    finishStartupScreen();
+  }, remaining);
+};
+
+if (document.readyState === "complete") {
+  completeStartup();
+} else {
+  window.addEventListener("load", completeStartup, { once: true });
+}
