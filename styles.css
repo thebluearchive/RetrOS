@@ -2304,7 +2304,10 @@ body.is-shutting-down .context-menu {
 }
 
 body.is-shut-down,
-body.is-shut-down *,
+body.is-shut-down * {
+  cursor: none !important;
+}
+
 body.is-shutting-down,
 body.is-shutting-down * {
   cursor: var(--cursor-wait) !important;

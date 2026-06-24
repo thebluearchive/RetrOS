@@ -1050,17 +1050,8 @@ document.addEventListener("win95:shutdown", (event) => {
   startShutdownSequence();
 });
 
-function restoreFromShutdownScreen() {
-  clearShutdownTimers();
-  setShuttingDownState(false);
-  setShutdownScreenState(false);
-}
-
 document.addEventListener("click", (event) => {
   if (document.body.classList.contains("is-shut-down")) {
-    if (shutdownScreenElement.contains(event.target) || event.target === shutdownScreenElement) {
-      restoreFromShutdownScreen();
-    }
     return;
   }
 
@@ -1082,7 +1073,6 @@ document.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (document.body.classList.contains("is-shut-down")) {
     event.preventDefault();
-    restoreFromShutdownScreen();
     return;
   }
 
