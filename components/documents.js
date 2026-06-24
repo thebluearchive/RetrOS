@@ -1,20 +1,5 @@
 export const DOCUMENT_ITEMS = [
   {
-    id: "moon-note",
-    title: "moon-note.txt",
-    type: "Text Document",
-    size: "2 KB",
-    modified: "06/22/26",
-    icon: "./res/png/notepad_file-0.png",
-    description: "A small note found beside the taskbar clock.",
-    content:
-      "Moon Note\n\nPlease remember to wind the desktop at midnight.\n\nIf the stars begin blinking in Morse code, do not panic. That usually means the screensaver is dreaming.\n\n- The Night Shift",
-    preview:
-      "Moon Note\n\nPlease remember to wind the desktop at midnight.\n\nIf the stars begin blinking in Morse code, do not panic...",
-    actionLabel: "Open in Notepad",
-    appId: "notepad",
-  },
-  {
     id: "sandwich-memo",
     title: "sandwich-memo.txt",
     type: "Text Document",
@@ -26,6 +11,21 @@ export const DOCUMENT_ITEMS = [
       "Sandwich Memo\n\nA sandwich is a protocol, not a format.\n\nApproved fillings:\n- Tomato\n- Sharp cheddar\n- One heroic pickle\n\nRejected fillings:\n- Printer toner\n- Loose pixels\n\nPlease file all crumbs under C:\\SNACKS.",
     preview:
       "Sandwich Memo\n\nA sandwich is a protocol, not a format.\n\nApproved fillings:\n- Tomato\n- Sharp cheddar...",
+    actionLabel: "Open in Notepad",
+    appId: "notepad",
+  },
+  {
+    id: "core-poem",
+    title: "core.txt",
+    type: "Text Document",
+    size: "1 KB",
+    modified: "06/23/26",
+    icon: "./res/png/notepad_file-0.png",
+    description: "A short poem that ended exactly how you expected.",
+    content:
+      "Roses are #FF0000,\nViolets are #0000FF,\nI dereferenced a null pointer,\nSegmentation fault (core dumped)",
+    preview:
+      "Roses are #FF0000,\nViolets are #0000FF,\nI dereferenced a null pointer,\nSegmentation fault (core dumped)",
     actionLabel: "Open in Notepad",
     appId: "notepad",
   },
@@ -88,21 +88,6 @@ export const DOCUMENT_ITEMS = [
         ["#ffffff", 248, 56, 34, 12],
       ],
     },
-  },
-  {
-    id: "readme",
-    title: "read-me-first.txt",
-    type: "Text Document",
-    size: "1 KB",
-    modified: "06/18/26",
-    icon: "./res/png/notepad_file-0.png",
-    description: "An oddly polite note from the Documents folder.",
-    content:
-      "Hello!\n\nThese are not important business documents.\n\nThey are tiny souvenirs from a pretend computer: notes, doodles, and fragments of a desktop that has been left on for too long.\n\nDouble-click a .txt file for Notepad.\nDouble-click a .bmp file for Paint.",
-    preview:
-      "Hello!\n\nThese are not important business documents.\n\nThey are tiny souvenirs from a pretend computer...",
-    actionLabel: "Open in Notepad",
-    appId: "notepad",
   },
 ];
 
@@ -401,7 +386,7 @@ export const documentsApp = {
   title: "Documents",
   icon: "./res/png/directory_open_file_mydocs_small-0.png",
   defaultSize: {
-    width: 690,
+    width: 800,
     height: 448,
   },
   minSize: {

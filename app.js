@@ -17,6 +17,7 @@ const desktopFilesStorageKey = "win95-desktop-files";
 const documentTitlesStorageKey = "win95-documents-titles";
 const recycleBinEmptyIcon = "./res/png/recycle_bin_empty-0.png";
 const recycleBinFullIcon = "./res/png/recycle_bin_full-0.png";
+const removedDocumentIds = new Set(["moon-note", "readme"]);
 const desktopGrid = {
   startX: 12,
   startY: 14,
@@ -616,6 +617,21 @@ function normalizeDesktopFile(rawItem) {
     return null;
   }
 
+  if (
+    typeof rawItem.documentId === "string" &&
+    removedDocumentIds.has(rawItem.documentId)
+  ) {
+    return null;
+  }
+
+  if (
+    rawItem.documentItem &&
+    typeof rawItem.documentItem.id === "string" &&
+    removedDocumentIds.has(rawItem.documentItem.id)
+  ) {
+    return null;
+  }
+
   const fileDefinition = getDesktopFileDefinition(rawItem.fileType);
   if (!fileDefinition) {
     return null;
@@ -656,7 +672,7 @@ function serializeDocumentItem(item) {
 }
 
 function normalizeDocumentItem(rawItem) {
-  if (!rawItem || typeof rawItem.id !== "string") {
+  if (!rawItem || typeof rawItem.id !== "string" || removedDocumentIds.has(rawItem.id)) {
     return null;
   }
 
@@ -721,7 +737,14 @@ function loadDesktopFilesState() {
       ? parsedState.recycleBinItems.map(normalizeDesktopFile).filter(Boolean)
       : [];
     const documentItems = Array.isArray(parsedState.documentItems)
-      ? parsedState.documentItems.map(normalizeDocumentItem).filter(Boolean)
+      ? (() => {
+          const persistedItems = parsedState.documentItems.map(normalizeDocumentItem).filter(Boolean);
+          const persistedIds = new Set(persistedItems.map((item) => item.id));
+          const missingSeedItems = DOCUMENT_ITEMS
+            .filter((item) => !persistedIds.has(item.id))
+            .map((item) => ({ ...item }));
+          return [...persistedItems, ...missingSeedItems];
+        })()
       : DOCUMENT_ITEMS.map((item) => ({ ...item }));
     const maxFileId = [...desktopItems, ...recycleBinItems].reduce((maxId, item) => {
       return Math.max(maxId, getDesktopFileNumericId(item));
